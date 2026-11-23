@@ -1,4 +1,6 @@
-# ttfx
+# SigmaOS ttfx
+
+> Forked from omacom/ttfx (MIT). See `SIGMAOS_FORK.md`.
 
 Terminal text effects as a single static binary. Pipe text in, pick an effect:
 
