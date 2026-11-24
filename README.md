@@ -1,6 +1,6 @@
 # SigmaOS ttfx
 
-> Forked from omacom/ttfx (MIT). See `SIGMAOS_FORK.md`.
+> Forked from SigmaOS/ttfx (MIT). See `SIGMAOS_FORK.md`.
 
 Terminal text effects as a single static binary. Pipe text in, pick an effect:
 
@@ -11,7 +11,7 @@ fortune | ttfx --random-effect
 git log --oneline -10 | ttfx matrix
 ```
 
-<img src="docs/effects/decrypt.gif" width="588" alt="the decrypt effect resolving the Omarchy logo">
+<img src="docs/effects/decrypt.gif" width="588" alt="the decrypt effect resolving the SigmaOS logo">
 
 ## Credit where it's due
 
@@ -91,7 +91,7 @@ joules one paced run costs, read from the CPU's RAPL counters (Linux, needs root
 
 ## The effects
 
-All 37, each animating the Omarchy logo. Every frame below came out of the Rust binary — and is
+All 37, each animating the SigmaOS logo. Every frame below came out of the Rust binary — and is
 byte-identical to what the Python original produces from the same input and seed.
 
 |     |     |
@@ -193,7 +193,7 @@ Upstream is not vendored here — the harness fetches it, because it's their cod
 
 ## Scope
 
-Linux and macOS. Built for [Omarchy](https://omarchy.org) originally; nothing targets a
+Linux and macOS. Built for [SigmaOS](https://omarchy.org) originally; nothing targets a
 specific libc, and CI runs the tests and CLI corpus on both platforms. The byte-exact
 parity suites stay pinned to Linux/glibc — Apple's libm rounds a few transcendentals a
 last-ulp differently, which quantization hides in real frames but a bit-exact comparison
