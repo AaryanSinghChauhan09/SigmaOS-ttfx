@@ -304,13 +304,14 @@ impl EasingTracker {
         }
     }
 
+    #[allow(clippy::manual_clamp)] // min/max keep the NaN semantics the Python golden relies on
     pub fn step(&mut self) -> f64 {
         if self.current_step < self.total_steps {
             self.current_step += 1;
             self.progress_ratio = self.current_step as f64 / self.total_steps as f64;
             self.eased_value = self.easing_function.ease(self.progress_ratio);
             if self.clamp {
-                self.eased_value = self.eased_value.clamp(0.0, 1.0);
+                self.eased_value = self.eased_value.min(1.0).max(0.0);
             }
             self.step_delta = self.eased_value - self.last_eased_value;
             self.last_eased_value = self.eased_value;
