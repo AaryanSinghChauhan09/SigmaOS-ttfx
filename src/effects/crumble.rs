@@ -121,15 +121,13 @@ impl Effect for Crumble {
                 (
                     ch.input_coord,
                     ch.input_symbol.clone(),
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.uses_input_preexisting_colors,
                 )
             };
-            self.character_final_color_map.insert(
-                id,
-                final_gradient_mapping.get(&input_coord).unwrap().clone(),
-            );
+            self.character_final_color_map
+                .insert(id, *final_gradient_mapping.get(&input_coord).unwrap());
             let (
                 weak_fg_color,
                 weak_bg_color,
@@ -176,18 +174,14 @@ impl Effect for Crumble {
                     .map(|bg| Animation::adjust_color_brightness(bg, 0.55));
                 strengthen_flash_fg_gradient = match &input_fg {
                     Some(fg) => Some(
-                        Gradient::with_steps(&[fg.clone(), white.clone()], 6, false)
+                        Gradient::with_steps(&[*fg, white], 6, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => {
                         if !has_existing_colors {
                             Some(
-                                Gradient::with_steps(
-                                    &[dynamic_neutral_gray.clone(), white.clone()],
-                                    6,
-                                    false,
-                                )
-                                .map_err(EngineError::Other)?,
+                                Gradient::with_steps(&[dynamic_neutral_gray, white], 6, false)
+                                    .map_err(EngineError::Other)?,
                             )
                         } else {
                             None
@@ -196,53 +190,51 @@ impl Effect for Crumble {
                 };
                 strengthen_flash_bg_gradient = match &input_bg {
                     Some(bg) => Some(
-                        Gradient::with_steps(&[bg.clone(), white.clone()], 6, false)
+                        Gradient::with_steps(&[*bg, white], 6, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
                 strengthen_fg_gradient = match &input_fg {
                     Some(fg) => Some(
-                        Gradient::with_steps(&[white.clone(), fg.clone()], 9, false)
+                        Gradient::with_steps(&[white, *fg], 9, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
                 strengthen_bg_gradient = match &input_bg {
                     Some(bg) => Some(
-                        Gradient::with_steps(&[white.clone(), bg.clone()], 9, false)
+                        Gradient::with_steps(&[white, *bg], 9, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
             } else {
-                let final_color = self.character_final_color_map.get(&id).unwrap().clone();
+                let final_color = *self.character_final_color_map.get(&id).unwrap();
                 weak_fg_color = Some(Animation::adjust_color_brightness(&final_color, 0.65));
                 weak_bg_color = None;
                 dust_fg_color = Some(Animation::adjust_color_brightness(&final_color, 0.55));
                 dust_bg_color = None;
                 strengthen_flash_fg_gradient = Some(
-                    Gradient::with_steps(&[final_color.clone(), white.clone()], 6, false)
+                    Gradient::with_steps(&[final_color, white], 6, false)
                         .map_err(EngineError::Other)?,
                 );
                 strengthen_flash_bg_gradient = None;
                 strengthen_fg_gradient = Some(
-                    Gradient::with_steps(&[white.clone(), final_color.clone()], 9, false)
+                    Gradient::with_steps(&[white, final_color], 9, false)
                         .map_err(EngineError::Other)?,
                 );
                 strengthen_bg_gradient = None;
             }
             let weaken_fg_gradient = match (&weak_fg_color, &dust_fg_color) {
                 (Some(weak), Some(dust)) => Some(
-                    Gradient::with_steps(&[weak.clone(), dust.clone()], 9, false)
-                        .map_err(EngineError::Other)?,
+                    Gradient::with_steps(&[*weak, *dust], 9, false).map_err(EngineError::Other)?,
                 ),
                 _ => None,
             };
             let weaken_bg_gradient = match (&weak_bg_color, &dust_bg_color) {
                 (Some(weak), Some(dust)) => Some(
-                    Gradient::with_steps(&[weak.clone(), dust.clone()], 9, false)
-                        .map_err(EngineError::Other)?,
+                    Gradient::with_steps(&[*weak, *dust], 9, false).map_err(EngineError::Other)?,
                 ),
                 _ => None,
             };
@@ -259,10 +251,7 @@ impl Effect for Crumble {
                         &input_symbol,
                         1,
                         VisualParams {
-                            colors: Some(ColorPair::new(
-                                weak_fg_color.clone(),
-                                weak_bg_color.clone(),
-                            )),
+                            colors: Some(ColorPair::new(weak_fg_color, weak_bg_color)),
                             ..Default::default()
                         },
                     )
@@ -294,7 +283,7 @@ impl Effect for Crumble {
                     .get_mut(&weaken_scn)
                     .unwrap()
                     .apply_gradient_to_symbols(
-                        &[input_symbol.clone()],
+                        std::slice::from_ref(&input_symbol),
                         4,
                         weaken_fg_gradient.as_ref(),
                         weaken_bg_gradient.as_ref(),
@@ -340,7 +329,7 @@ impl Effect for Crumble {
                     .get_mut(&scene_id)
                     .unwrap()
                     .apply_gradient_to_symbols(
-                        &[input_symbol.clone()],
+                        std::slice::from_ref(&input_symbol),
                         4,
                         strengthen_flash_fg_gradient.as_ref(),
                         strengthen_flash_bg_gradient.as_ref(),
@@ -366,7 +355,7 @@ impl Effect for Crumble {
                 } else {
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             4,
                             strengthen_fg_gradient.as_ref(),
                             strengthen_bg_gradient.as_ref(),
@@ -392,10 +381,7 @@ impl Effect for Crumble {
                         symbol,
                         1,
                         VisualParams {
-                            colors: Some(ColorPair::new(
-                                dust_fg_color.clone(),
-                                dust_bg_color.clone(),
-                            )),
+                            colors: Some(ColorPair::new(dust_fg_color, dust_bg_color)),
                             ..Default::default()
                         },
                     )

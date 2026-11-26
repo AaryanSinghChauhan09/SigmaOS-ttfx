@@ -120,10 +120,10 @@ impl Effect for Sweep {
             for id in characters {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 if let Some(fg) = &ch.animation.input_fg_color {
-                    self.dynamic_second_sweep_palette.push(fg.clone());
+                    self.dynamic_second_sweep_palette.push(*fg);
                 }
                 if let Some(bg) = &ch.animation.input_bg_color {
-                    self.dynamic_second_sweep_palette.push(bg.clone());
+                    self.dynamic_second_sweep_palette.push(*bg);
                 }
             }
             if self.dynamic_second_sweep_palette.is_empty() {
@@ -146,8 +146,8 @@ impl Effect for Sweep {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
                     ch.is_fill_character,
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                     ch.input_symbol.clone(),
                     ch.uses_input_preexisting_colors,
@@ -158,7 +158,7 @@ impl Effect for Sweep {
                     ColorPair::new(input_fg, input_bg)
                 } else {
                     ColorPair::new(
-                        Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                        Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                         None,
                     )
                 };
@@ -170,7 +170,7 @@ impl Effect for Sweep {
                     .new_scene(false, None, None, "initial_sweep", uses_pre);
             }
             for symbol in &self.config.sweep_symbols {
-                let color = ctx.rng.choice(&shades_of_gray).clone();
+                let color = *ctx.rng.choice(&shades_of_gray);
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
                     .scenes
@@ -209,9 +209,9 @@ impl Effect for Sweep {
             }
             for symbol in &self.config.sweep_symbols {
                 let color = if dynamic {
-                    ctx.rng.choice(&self.dynamic_second_sweep_palette).clone()
+                    *ctx.rng.choice(&self.dynamic_second_sweep_palette)
                 } else {
-                    ctx.rng.choice(&final_fg_gradient.spectrum).clone()
+                    *ctx.rng.choice(&final_fg_gradient.spectrum)
                 };
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
@@ -229,7 +229,7 @@ impl Effect for Sweep {
                     .map_err(EngineError::Other)?;
             }
             let final_colors = if !is_fill {
-                self.character_final_color_map.get(&id).unwrap().clone()
+                *self.character_final_color_map.get(&id).unwrap()
             } else if dynamic {
                 ColorPair::default()
             } else {

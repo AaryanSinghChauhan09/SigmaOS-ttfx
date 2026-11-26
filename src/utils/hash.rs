@@ -9,11 +9,10 @@ pub struct FxHasher(u64);
 impl std::hash::Hasher for FxHasher {
     #[inline]
     fn write(&mut self, bytes: &[u8]) {
-        let mut chunks = bytes.chunks_exact(8);
-        for chunk in &mut chunks {
-            self.write_u64(u64::from_le_bytes(chunk.try_into().unwrap()));
+        let (chunks, rest) = bytes.as_chunks::<8>();
+        for chunk in chunks {
+            self.write_u64(u64::from_le_bytes(*chunk));
         }
-        let rest = chunks.remainder();
         if !rest.is_empty() {
             let mut word = [0u8; 8];
             word[..rest.len()].copy_from_slice(rest);

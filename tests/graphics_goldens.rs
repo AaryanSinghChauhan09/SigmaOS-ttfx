@@ -42,7 +42,7 @@ fn generate_lines() -> Vec<String> {
             stops.join("+"),
             g.spectrum
                 .iter()
-                .map(|c| c.rgb_color.clone())
+                .map(|c| c.rgb_color)
                 .collect::<Vec<_>>()
                 .join(";")
         ));

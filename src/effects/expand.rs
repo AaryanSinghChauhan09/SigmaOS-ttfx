@@ -96,8 +96,8 @@ impl Effect for Expand {
             let (input_fg, input_bg, input_coord) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                 )
             };
@@ -105,7 +105,7 @@ impl Effect for Expand {
                 ColorPair::new(input_fg, input_bg)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 )
             };
@@ -120,8 +120,8 @@ impl Effect for Expand {
             let (input_fg, input_bg, input_coord, input_symbol, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                     ch.input_symbol.clone(),
                     ch.uses_input_preexisting_colors,
@@ -181,23 +181,15 @@ impl Effect for Expand {
                 if dynamic {
                     let fg_gradient = match &input_fg {
                         Some(c) => Some(
-                            Gradient::with_steps(
-                                &[final_gradient.spectrum[0].clone(), c.clone()],
-                                10,
-                                false,
-                            )
-                            .map_err(EngineError::Other)?,
+                            Gradient::with_steps(&[final_gradient.spectrum[0], *c], 10, false)
+                                .map_err(EngineError::Other)?,
                         ),
                         None => None,
                     };
                     let bg_gradient = match &input_bg {
                         Some(c) => Some(
-                            Gradient::with_steps(
-                                &[final_gradient.spectrum[0].clone(), c.clone()],
-                                10,
-                                false,
-                            )
-                            .map_err(EngineError::Other)?,
+                            Gradient::with_steps(&[final_gradient.spectrum[0], *c], 10, false)
+                                .map_err(EngineError::Other)?,
                         ),
                         None => None,
                     };
@@ -225,14 +217,10 @@ impl Effect for Expand {
                 } else {
                     let final_fg = self.character_final_color_map[&id]
                         .fg_color
-                        .clone()
                         .expect("gradient mapping fg");
-                    let gradient = Gradient::with_steps(
-                        &[final_gradient.spectrum[0].clone(), final_fg],
-                        10,
-                        false,
-                    )
-                    .map_err(EngineError::Other)?;
+                    let gradient =
+                        Gradient::with_steps(&[final_gradient.spectrum[0], final_fg], 10, false)
+                            .map_err(EngineError::Other)?;
                     scene
                         .apply_gradient_to_symbols(&symbols, 5, Some(&gradient), None)
                         .map_err(EngineError::Other)?;

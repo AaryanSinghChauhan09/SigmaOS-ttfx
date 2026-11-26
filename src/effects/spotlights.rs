@@ -122,7 +122,7 @@ impl Spotlights {
         }
         let ch = &ctx.terminal.arena[id.0 as usize];
         if ch.animation.input_fg_color.is_none() && ch.animation.input_bg_color.is_some() {
-            return Some(ColorPair::new(None, ch.animation.input_bg_color.clone()));
+            return Some(ColorPair::new(None, ch.animation.input_bg_color));
         }
         if !Self::has_input_colors(ctx, id) {
             return Some(ColorPair::default());
@@ -235,7 +235,7 @@ impl Spotlights {
         {
             let expand_override = self.get_expand_color_override(ctx, id);
             let colors = match expand_override {
-                None => self.character_color_map.get(&id).unwrap().1.clone(),
+                None => self.character_color_map.get(&id).unwrap().1,
                 Some(overridden) => overridden,
             };
             let ch = &mut ctx.terminal.arena[id.0 as usize];
@@ -267,7 +267,7 @@ impl Spotlights {
                     brightness_factor,
                 )
             } else {
-                self.character_color_map.get(&id).unwrap().0.clone()
+                self.character_color_map.get(&id).unwrap().0
             };
             let expand_override = self.get_expand_color_override(ctx, id);
             let colors = match expand_override {
@@ -325,18 +325,18 @@ impl Effect for Spotlights {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
                     ch.input_coord,
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                 )
             };
             let (bright_pair, dark_pair);
             if dynamic {
                 if input_fg.is_some() || input_bg.is_some() {
-                    let mut bright_fg = input_fg.clone();
+                    let mut bright_fg = input_fg;
                     if bright_fg.is_none() && input_bg.is_some() {
-                        bright_fg = Some(dynamic_neutral_gray.clone());
+                        bright_fg = Some(dynamic_neutral_gray);
                     }
-                    bright_pair = ColorPair::new(bright_fg.clone(), input_bg.clone());
+                    bright_pair = ColorPair::new(bright_fg, input_bg);
                     dark_pair = ColorPair::new(
                         bright_fg
                             .as_ref()
@@ -346,7 +346,7 @@ impl Effect for Spotlights {
                             .map(|bg| Animation::adjust_color_brightness(bg, 0.2)),
                     );
                 } else {
-                    bright_pair = ColorPair::new(Some(dynamic_neutral_gray.clone()), None);
+                    bright_pair = ColorPair::new(Some(dynamic_neutral_gray), None);
                     dark_pair = ColorPair::new(
                         Some(Animation::adjust_color_brightness(
                             &dynamic_neutral_gray,
@@ -356,7 +356,7 @@ impl Effect for Spotlights {
                     );
                 }
             } else {
-                let color_bright = final_gradient_mapping.get(&input_coord).unwrap().clone();
+                let color_bright = *final_gradient_mapping.get(&input_coord).unwrap();
                 dark_pair = ColorPair::new(
                     Some(Animation::adjust_color_brightness(&color_bright, 0.2)),
                     None,
@@ -365,7 +365,7 @@ impl Effect for Spotlights {
             }
             ctx.terminal.set_character_visibility(id, true);
             self.character_color_map
-                .insert(id, (bright_pair, dark_pair.clone()));
+                .insert(id, (bright_pair, dark_pair));
             let ch = &mut ctx.terminal.arena[id.0 as usize];
             let input_symbol = ch.input_symbol.clone();
             let uses_pre = ch.uses_input_preexisting_colors;

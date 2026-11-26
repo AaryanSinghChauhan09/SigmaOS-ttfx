@@ -204,7 +204,7 @@ impl Rings {
                 .new_scene(false, None, None, "gradient", uses_pre);
             let scene = ch.animation.scenes.get_mut(&gradient_scn).unwrap();
             if dynamic {
-                let colors = self.character_final_color_map.get(&id).unwrap().clone();
+                let colors = *self.character_final_color_map.get(&id).unwrap();
                 scene
                     .add_frame(
                         &input_symbol,
@@ -221,14 +221,13 @@ impl Rings {
                     .get(&id)
                     .unwrap()
                     .fg_color
-                    .clone()
                     .expect("gradient mapping fg");
                 let char_gradient =
-                    Gradient::with_steps(&[final_fg_color, ring.ring_color.clone()], 8, false)
+                    Gradient::with_steps(&[final_fg_color, ring.ring_color], 8, false)
                         .map_err(EngineError::Other)?;
                 scene
                     .apply_gradient_to_symbols(
-                        &[input_symbol.clone()],
+                        std::slice::from_ref(&input_symbol),
                         3,
                         Some(&char_gradient),
                         None,
@@ -280,7 +279,7 @@ impl Rings {
                 .new_scene(false, None, None, "disperse", uses_pre);
             let scene = ch.animation.scenes.get_mut(&disperse_scn).unwrap();
             if dynamic {
-                let colors = self.character_final_color_map.get(&id).unwrap().clone();
+                let colors = *self.character_final_color_map.get(&id).unwrap();
                 scene
                     .add_frame(
                         &input_symbol,
@@ -297,14 +296,13 @@ impl Rings {
                     .get(&id)
                     .unwrap()
                     .fg_color
-                    .clone()
                     .expect("gradient mapping fg");
                 let disperse_gradient =
-                    Gradient::with_steps(&[ring.ring_color.clone(), final_fg_color], 8, false)
+                    Gradient::with_steps(&[ring.ring_color, final_fg_color], 8, false)
                         .map_err(EngineError::Other)?;
                 scene
                     .apply_gradient_to_symbols(
-                        &[input_symbol.clone()],
+                        std::slice::from_ref(&input_symbol),
                         10,
                         Some(&disperse_gradient),
                         None,
@@ -430,8 +428,8 @@ impl Effect for Rings {
                 (
                     ch.input_coord,
                     ch.input_symbol.clone(),
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.uses_input_preexisting_colors,
                 )
             };
@@ -439,12 +437,11 @@ impl Effect for Rings {
                 ColorPair::new(input_fg, input_bg)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 )
             };
-            self.character_final_color_map
-                .insert(id, final_colors.clone());
+            self.character_final_color_map.insert(id, final_colors);
             let start_scn = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 let scene_id = ch.animation.new_scene(false, None, None, "", uses_pre);
@@ -498,8 +495,7 @@ impl Effect for Rings {
             if (in_canvas_count as f64) / (ring_coords.len() as f64) < 0.25 {
                 break;
             }
-            let ring_color =
-                self.config.ring_colors[rings.len() % self.config.ring_colors.len()].clone();
+            let ring_color = self.config.ring_colors[rings.len() % self.config.ring_colors.len()];
             let ring = Ring::new(
                 ctx,
                 &self.config,

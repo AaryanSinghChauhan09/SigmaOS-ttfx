@@ -133,10 +133,8 @@ impl Effect for ColorShift {
         };
         for &id in &characters {
             let input_coord = ctx.terminal.arena[id.0 as usize].input_coord;
-            self.character_final_color_map.insert(
-                id,
-                final_gradient_mapping.get(&input_coord).unwrap().clone(),
-            );
+            self.character_final_color_map
+                .insert(id, *final_gradient_mapping.get(&input_coord).unwrap());
         }
         let gradient = Gradient::new(
             &self.config.gradient_stops,
@@ -156,8 +154,8 @@ impl Effect for ColorShift {
             let (input_fg, input_bg, input_coord, input_symbol, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                     ch.input_symbol.clone(),
                     ch.uses_input_preexisting_colors,
@@ -213,7 +211,7 @@ impl Effect for ColorShift {
                             &input_symbol,
                             self.config.gradient_frames,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(*color), None)),
                                 ..Default::default()
                             },
                         )
@@ -222,18 +220,18 @@ impl Effect for ColorShift {
                 ch.animation
                     .new_scene(false, None, None, "final_gradient", uses_pre);
             }
-            let last_color = colors.last().unwrap().clone();
+            let last_color = *colors.last().unwrap();
             if dynamic {
                 let fg_gradient = match &input_fg {
                     Some(c) => Some(
-                        Gradient::with_steps(&[last_color.clone(), c.clone()], 8, false)
+                        Gradient::with_steps(&[last_color, *c], 8, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
                 let bg_gradient = match &input_bg {
                     Some(c) => Some(
-                        Gradient::with_steps(&[last_color.clone(), c.clone()], 8, false)
+                        Gradient::with_steps(&[last_color, *c], 8, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
@@ -243,7 +241,7 @@ impl Effect for ColorShift {
                 if fg_gradient.is_some() || bg_gradient.is_some() {
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             self.config.gradient_frames,
                             fg_gradient.as_ref(),
                             bg_gradient.as_ref(),
@@ -262,7 +260,7 @@ impl Effect for ColorShift {
                         .map_err(EngineError::Other)?;
                 }
             } else {
-                let final_color = self.character_final_color_map.get(&id).unwrap().clone();
+                let final_color = *self.character_final_color_map.get(&id).unwrap();
                 let final_scene_gradient =
                     Gradient::with_steps(&[last_color, final_color], 8, false)
                         .map_err(EngineError::Other)?;
@@ -274,7 +272,7 @@ impl Effect for ColorShift {
                             &input_symbol,
                             self.config.gradient_frames,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(*color), None)),
                                 ..Default::default()
                             },
                         )

@@ -116,8 +116,8 @@ impl Effect for Wipe {
             let (input_fg, input_bg, input_coord, input_symbol, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                     ch.input_symbol.clone(),
                     ch.uses_input_preexisting_colors,
@@ -127,12 +127,11 @@ impl Effect for Wipe {
                 ColorPair::new(input_fg, input_bg)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 )
             };
-            self.character_final_color_map
-                .insert(id, final_colors.clone());
+            self.character_final_color_map.insert(id, final_colors);
 
             {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
@@ -146,16 +145,16 @@ impl Effect for Wipe {
                                 &input_symbol,
                                 self.config.final_gradient_frames,
                                 VisualParams {
-                                    colors: Some(final_colors.clone()),
+                                    colors: Some(final_colors),
                                     ..Default::default()
                                 },
                             )
                             .map_err(EngineError::Other)?;
                     }
                 } else {
-                    let final_fg = final_colors.fg_color.clone().expect("gradient mapping fg");
+                    let final_fg = final_colors.fg_color.expect("gradient mapping fg");
                     let wipe_gradient = Gradient::new(
-                        &[final_gradient.spectrum[0].clone(), final_fg],
+                        &[final_gradient.spectrum[0], final_fg],
                         &self.config.final_gradient_steps,
                         false,
                         false,
@@ -163,7 +162,7 @@ impl Effect for Wipe {
                     .map_err(EngineError::Other)?;
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             self.config.final_gradient_frames,
                             Some(&wipe_gradient),
                             None,

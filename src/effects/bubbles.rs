@@ -218,7 +218,7 @@ impl Bubbles {
                                 &input_symbol,
                                 4,
                                 VisualParams {
-                                    colors: Some(ColorPair::new(Some(step.clone()), None)),
+                                    colors: Some(ColorPair::new(Some(*step), None)),
                                     ..Default::default()
                                 },
                             )
@@ -246,7 +246,7 @@ impl Bubbles {
                 }
             }
         } else {
-            let bubble_color = ctx.rng.choice(&self.config.bubble_colors).clone();
+            let bubble_color = *ctx.rng.choice(&self.config.bubble_colors);
             for &id in &bubble.characters {
                 let (input_symbol, uses_pre) = {
                     let ch = &ctx.terminal.arena[id.0 as usize];
@@ -263,7 +263,7 @@ impl Bubbles {
                             &input_symbol,
                             1,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(bubble_color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(bubble_color), None)),
                                 ..Default::default()
                             },
                         )
@@ -367,15 +367,13 @@ impl Effect for Bubbles {
                 (
                     ch.input_coord,
                     ch.input_symbol.clone(),
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.uses_input_preexisting_colors,
                 )
             };
-            self.character_final_color_map.insert(
-                id,
-                final_gradient_mapping.get(&input_coord).unwrap().clone(),
-            );
+            self.character_final_color_map
+                .insert(id, *final_gradient_mapping.get(&input_coord).unwrap());
             ctx.terminal.arena[id.0 as usize].layer = 1;
             let (pop_1_scene, pop_2_scene) = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
@@ -389,7 +387,7 @@ impl Effect for Bubbles {
                         "*",
                         9,
                         VisualParams {
-                            colors: Some(ColorPair::new(Some(self.config.pop_color.clone()), None)),
+                            colors: Some(ColorPair::new(Some(self.config.pop_color), None)),
                             ..Default::default()
                         },
                     )
@@ -402,7 +400,7 @@ impl Effect for Bubbles {
                         "'",
                         9,
                         VisualParams {
-                            colors: Some(ColorPair::new(Some(self.config.pop_color.clone()), None)),
+                            colors: Some(ColorPair::new(Some(self.config.pop_color), None)),
                             ..Default::default()
                         },
                     )
@@ -416,23 +414,15 @@ impl Effect for Bubbles {
             if dynamic {
                 let fg_gradient = match &input_fg {
                     Some(fg) => Some(
-                        Gradient::with_steps(
-                            &[self.config.pop_color.clone(), fg.clone()],
-                            8,
-                            false,
-                        )
-                        .map_err(EngineError::Other)?,
+                        Gradient::with_steps(&[self.config.pop_color, *fg], 8, false)
+                            .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
                 let bg_gradient = match &input_bg {
                     Some(bg) => Some(
-                        Gradient::with_steps(
-                            &[self.config.pop_color.clone(), bg.clone()],
-                            8,
-                            false,
-                        )
-                        .map_err(EngineError::Other)?,
+                        Gradient::with_steps(&[self.config.pop_color, *bg], 8, false)
+                            .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
@@ -441,7 +431,7 @@ impl Effect for Bubbles {
                 if fg_gradient.is_some() || bg_gradient.is_some() {
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             6,
                             fg_gradient.as_ref(),
                             bg_gradient.as_ref(),
@@ -460,9 +450,9 @@ impl Effect for Bubbles {
                         .map_err(EngineError::Other)?;
                 }
             } else {
-                let final_color = self.character_final_color_map.get(&id).unwrap().clone();
+                let final_color = *self.character_final_color_map.get(&id).unwrap();
                 let char_final_gradient =
-                    Gradient::with_steps(&[self.config.pop_color.clone(), final_color], 8, false)
+                    Gradient::with_steps(&[self.config.pop_color, final_color], 8, false)
                         .map_err(EngineError::Other)?;
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
@@ -470,7 +460,7 @@ impl Effect for Bubbles {
                     .get_mut(&final_scene)
                     .unwrap()
                     .apply_gradient_to_symbols(
-                        &[input_symbol.clone()],
+                        std::slice::from_ref(&input_symbol),
                         6,
                         Some(&char_final_gradient),
                         None,

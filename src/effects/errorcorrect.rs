@@ -84,8 +84,8 @@ impl ErrorCorrect {
             let ch = &ctx.terminal.arena[id.0 as usize];
             (
                 ch.input_symbol.clone(),
-                ch.animation.input_fg_color.clone(),
-                ch.animation.input_bg_color.clone(),
+                ch.animation.input_fg_color,
+                ch.animation.input_bg_color,
                 ch.uses_input_preexisting_colors,
             )
         };
@@ -95,14 +95,14 @@ impl ErrorCorrect {
         };
         let fg_gradient = match &input_fg {
             Some(fg) => Some(
-                Gradient::with_steps(&[self.config.correct_color.clone(), fg.clone()], 10, false)
+                Gradient::with_steps(&[self.config.correct_color, *fg], 10, false)
                     .map_err(EngineError::Other)?,
             ),
             None => None,
         };
         let bg_gradient = match &input_bg {
             Some(bg) => Some(
-                Gradient::with_steps(&[self.config.correct_color.clone(), bg.clone()], 10, false)
+                Gradient::with_steps(&[self.config.correct_color, *bg], 10, false)
                     .map_err(EngineError::Other)?,
             ),
             None => None,
@@ -112,7 +112,7 @@ impl ErrorCorrect {
         if fg_gradient.is_some() || bg_gradient.is_some() {
             scene
                 .apply_gradient_to_symbols(
-                    &[input_symbol.clone()],
+                    std::slice::from_ref(&input_symbol),
                     3,
                     fg_gradient.as_ref(),
                     bg_gradient.as_ref(),
@@ -160,17 +160,14 @@ impl ErrorCorrect {
                         block,
                         3,
                         VisualParams {
-                            colors: Some(ColorPair::new(
-                                Some(self.config.error_color.clone()),
-                                None,
-                            )),
+                            colors: Some(ColorPair::new(Some(self.config.error_color), None)),
                             ..Default::default()
                         },
                     )
                     .map_err(EngineError::Other)?;
             }
         }
-        let final_colors = self.character_final_color_map.get(&id).unwrap().clone();
+        let final_colors = *self.character_final_color_map.get(&id).unwrap();
         {
             let ch = &mut ctx.terminal.arena[id.0 as usize];
             let scene = ch.animation.scenes.get_mut(&last_block_wipe).unwrap();
@@ -181,10 +178,7 @@ impl ErrorCorrect {
                             block,
                             3,
                             VisualParams {
-                                colors: Some(ColorPair::new(
-                                    Some(self.config.correct_color.clone()),
-                                    None,
-                                )),
+                                colors: Some(ColorPair::new(Some(self.config.correct_color), None)),
                                 ..Default::default()
                             },
                         )
@@ -207,10 +201,7 @@ impl ErrorCorrect {
                             block,
                             3,
                             VisualParams {
-                                colors: Some(ColorPair::new(
-                                    Some(self.config.correct_color.clone()),
-                                    None,
-                                )),
+                                colors: Some(ColorPair::new(Some(self.config.correct_color), None)),
                                 ..Default::default()
                             },
                         )
@@ -229,7 +220,7 @@ impl ErrorCorrect {
                     &input_symbol,
                     1,
                     VisualParams {
-                        colors: Some(ColorPair::new(Some(self.config.error_color.clone()), None)),
+                        colors: Some(ColorPair::new(Some(self.config.error_color), None)),
                         ..Default::default()
                     },
                 )
@@ -247,10 +238,7 @@ impl ErrorCorrect {
                         "▓",
                         3,
                         VisualParams {
-                            colors: Some(ColorPair::new(
-                                Some(self.config.error_color.clone()),
-                                None,
-                            )),
+                            colors: Some(ColorPair::new(Some(self.config.error_color), None)),
                             ..Default::default()
                         },
                     )
@@ -288,7 +276,7 @@ impl ErrorCorrect {
         } else {
             let final_fg = final_colors_fg(&self.character_final_color_map, id);
             let char_final_gradient =
-                Gradient::with_steps(&[self.config.correct_color.clone(), final_fg], 10, false)
+                Gradient::with_steps(&[self.config.correct_color, final_fg], 10, false)
                     .map_err(EngineError::Other)?;
             let ch = &mut ctx.terminal.arena[id.0 as usize];
             let scene_id = ch.animation.new_scene(false, None, None, "", uses_pre);
@@ -297,7 +285,7 @@ impl ErrorCorrect {
                 .get_mut(&scene_id)
                 .unwrap()
                 .apply_gradient_to_symbols(
-                    &[input_symbol.clone()],
+                    std::slice::from_ref(&input_symbol),
                     3,
                     Some(&char_final_gradient),
                     None,
@@ -359,11 +347,7 @@ impl ErrorCorrect {
 }
 
 fn final_colors_fg(map: &HashMap<CharId, ColorPair>, id: CharId) -> Color {
-    map.get(&id)
-        .unwrap()
-        .fg_color
-        .clone()
-        .expect("gradient mapping fg")
+    map.get(&id).unwrap().fg_color.expect("gradient mapping fg")
 }
 
 impl EffectHooks for ErrorCorrect {
@@ -405,13 +389,10 @@ impl Effect for ErrorCorrect {
             let final_colors = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 if dynamic {
-                    ColorPair::new(
-                        ch.animation.input_fg_color.clone(),
-                        ch.animation.input_bg_color.clone(),
-                    )
+                    ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
                 } else {
                     ColorPair::new(
-                        Some(final_gradient_mapping.get(&ch.input_coord).unwrap().clone()),
+                        Some(*final_gradient_mapping.get(&ch.input_coord).unwrap()),
                         None,
                     )
                 }
@@ -419,7 +400,7 @@ impl Effect for ErrorCorrect {
             self.character_final_color_map.insert(id, final_colors);
         }
         for &id in &characters {
-            let spawn_colors = self.character_final_color_map.get(&id).unwrap().clone();
+            let spawn_colors = *self.character_final_color_map.get(&id).unwrap();
             let spawn_scene = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 let uses_pre = ch.uses_input_preexisting_colors;
@@ -446,10 +427,7 @@ impl Effect for ErrorCorrect {
 
         let mut all_characters: Vec<CharId> = ctx.terminal.input_characters.clone();
         let correcting_gradient = Gradient::with_steps(
-            &[
-                self.config.error_color.clone(),
-                self.config.correct_color.clone(),
-            ],
+            &[self.config.error_color, self.config.correct_color],
             10,
             false,
         )

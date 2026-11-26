@@ -113,7 +113,7 @@ impl Rng {
     fn refill_scalar(&mut self) {
         let [mut s0, mut s1, mut s2, mut s3] = self.s;
         let mut ends = [[0u64; LANES]; 4];
-        for (lane, block) in self.batch.chunks_exact_mut(LANE).enumerate() {
+        for (lane, block) in self.batch.as_chunks_mut::<LANE>().0.iter_mut().enumerate() {
             for out in block {
                 *out = s0.wrapping_add(s3).rotate_left(23).wrapping_add(s0);
                 let t = s1 << 17;

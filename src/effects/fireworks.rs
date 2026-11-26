@@ -248,13 +248,10 @@ impl Fireworks {
             let final_colors = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 if dynamic {
-                    ColorPair::new(
-                        ch.animation.input_fg_color.clone(),
-                        ch.animation.input_bg_color.clone(),
-                    )
+                    ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
                 } else {
                     ColorPair::new(
-                        Some(final_gradient_mapping.get(&ch.input_coord).unwrap().clone()),
+                        Some(*final_gradient_mapping.get(&ch.input_coord).unwrap()),
                         None,
                     )
                 }
@@ -264,20 +261,16 @@ impl Fireworks {
         let white = Color::from_hex("FFFFFF").unwrap();
         let shells = self.shells.clone();
         for firework_shell in shells {
-            let shell_color = ctx.rng.choice(&self.config.firework_colors).clone();
-            let shell_gradient = Gradient::with_steps(
-                &[shell_color.clone(), white.clone(), shell_color.clone()],
-                5,
-                false,
-            )
-            .map_err(EngineError::Other)?;
+            let shell_color = *ctx.rng.choice(&self.config.firework_colors);
+            let shell_gradient = Gradient::with_steps(&[shell_color, white, shell_color], 5, false)
+                .map_err(EngineError::Other)?;
             for id in firework_shell {
                 let (input_symbol, input_fg, input_bg, uses_pre) = {
                     let ch = &ctx.terminal.arena[id.0 as usize];
                     (
                         ch.input_symbol.clone(),
-                        ch.animation.input_fg_color.clone(),
-                        ch.animation.input_bg_color.clone(),
+                        ch.animation.input_fg_color,
+                        ch.animation.input_bg_color,
                         ch.uses_input_preexisting_colors,
                     )
                 };
@@ -291,7 +284,7 @@ impl Fireworks {
                             &self.config.firework_symbol,
                             2,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(shell_color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(shell_color), None)),
                                 ..Default::default()
                             },
                         )
@@ -301,7 +294,7 @@ impl Fireworks {
                             &self.config.firework_symbol,
                             1,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(white.clone()), None)),
+                                colors: Some(ColorPair::new(Some(white), None)),
                                 ..Default::default()
                             },
                         )
@@ -322,7 +315,7 @@ impl Fireworks {
                                 &input_symbol,
                                 2,
                                 VisualParams {
-                                    colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                    colors: Some(ColorPair::new(Some(*color), None)),
                                     ..Default::default()
                                 },
                             )
@@ -339,14 +332,14 @@ impl Fireworks {
                 if dynamic {
                     let fg_gradient = match &input_fg {
                         Some(fg) => Some(
-                            Gradient::with_steps(&[shell_color.clone(), fg.clone()], 15, false)
+                            Gradient::with_steps(&[shell_color, *fg], 15, false)
                                 .map_err(EngineError::Other)?,
                         ),
                         None => None,
                     };
                     let bg_gradient = match &input_bg {
                         Some(bg) => Some(
-                            Gradient::with_steps(&[shell_color.clone(), bg.clone()], 15, false)
+                            Gradient::with_steps(&[shell_color, *bg], 15, false)
                                 .map_err(EngineError::Other)?,
                         ),
                         None => None,
@@ -356,7 +349,7 @@ impl Fireworks {
                     if fg_gradient.is_some() || bg_gradient.is_some() {
                         scene
                             .apply_gradient_to_symbols(
-                                &[input_symbol.clone()],
+                                std::slice::from_ref(&input_symbol),
                                 10,
                                 fg_gradient.as_ref(),
                                 bg_gradient.as_ref(),
@@ -380,18 +373,16 @@ impl Fireworks {
                         .get(&id)
                         .unwrap()
                         .fg_color
-                        .clone()
                         .expect("gradient mapping fg");
-                    let fall_gradient =
-                        Gradient::with_steps(&[shell_color.clone(), final_fg], 15, false)
-                            .map_err(EngineError::Other)?;
+                    let fall_gradient = Gradient::with_steps(&[shell_color, final_fg], 15, false)
+                        .map_err(EngineError::Other)?;
                     let ch = &mut ctx.terminal.arena[id.0 as usize];
                     ch.animation
                         .scenes
                         .get_mut(&fall_scn)
                         .unwrap()
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             10,
                             Some(&fall_gradient),
                             None,
@@ -438,13 +429,9 @@ impl Effect for Fireworks {
                 self.config.firework_volume * ctx.terminal.input_characters.len() as f64,
             ),
         );
-        self.explode_distance = std::cmp::min(
-            15,
-            std::cmp::max(
-                1,
-                round_half_even(ctx.terminal.canvas.right as f64 * self.config.explode_distance),
-            ),
-        );
+        self.explode_distance =
+            round_half_even(ctx.terminal.canvas.right as f64 * self.config.explode_distance)
+                .clamp(1, 15);
         self.launch_delay = 0;
         self.prepare_waypoints(ctx)?;
         self.prepare_scenes(ctx)?;

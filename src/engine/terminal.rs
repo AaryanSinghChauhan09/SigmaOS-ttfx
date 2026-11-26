@@ -469,10 +469,10 @@ impl Terminal {
                 // Python: sorted(keys, key=count, reverse=True) — reverse of a
                 // stable ascending sort reverses tie order too; replicate by
                 // sorting descending with stable tie order = insertion order.
-                colors.sort_by(|a, b| b.1.cmp(&a.1));
+                colors.sort_by_key(|a| std::cmp::Reverse(a.1));
             }
             ColorSort::LeastToMost => {
-                colors.sort_by(|a, b| a.1.cmp(&b.1));
+                colors.sort_by_key(|a| a.1);
             }
             ColorSort::Random => {
                 rng.shuffle(&mut colors);

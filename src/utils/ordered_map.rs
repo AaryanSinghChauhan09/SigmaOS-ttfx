@@ -16,7 +16,7 @@ const NO_CACHED_LOOKUP: usize = usize::MAX;
 #[derive(Debug, Clone)]
 pub struct OrderedMap<V> {
     entries: Vec<(Rc<str>, V)>,
-    index: Option<Box<HashMap<Rc<str>, usize>>>,
+    index: Option<HashMap<Rc<str>, usize>>,
     last_lookup: Cell<usize>,
 }
 
@@ -67,7 +67,7 @@ impl<V> OrderedMap<V> {
                 .enumerate()
                 .map(|(position, (key, _))| (key.clone(), position))
                 .collect();
-            self.index = Some(Box::new(index));
+            self.index = Some(index);
         }
     }
 

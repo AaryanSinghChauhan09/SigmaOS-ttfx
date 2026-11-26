@@ -91,16 +91,16 @@ struct ActiveState {
 /// Whether the input holds ESC or CR (both ASCII, so a byte scan finds
 /// them): 32 bytes at a time, which vectorizes.
 fn has_esc_or_cr(bytes: &[u8]) -> bool {
-    let mut chunks = bytes.chunks_exact(32);
+    let (chunks, rest) = bytes.as_chunks::<32>();
     let mut found = false;
-    for chunk in &mut chunks {
+    for chunk in chunks {
         let mut hit = 0u8;
         for &b in chunk {
             hit |= (b == 0x1b) as u8 | (b == b'\r') as u8;
         }
         found |= hit != 0;
     }
-    found || chunks.remainder().iter().any(|&b| b == 0x1b || b == b'\r')
+    found || rest.iter().any(|&b| b == 0x1b || b == b'\r')
 }
 
 pub struct Preprocessor<'a> {

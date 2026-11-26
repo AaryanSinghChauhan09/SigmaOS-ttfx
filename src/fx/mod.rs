@@ -828,8 +828,8 @@ impl Engine {
     pub fn get_input_colors(&mut self, sort: ColorSort) -> Vec<Color> {
         let mut colors = self.input_colors_frequency.clone();
         match sort {
-            ColorSort::MostToLeast => colors.sort_by(|a, b| b.1.cmp(&a.1)),
-            ColorSort::LeastToMost => colors.sort_by(|a, b| a.1.cmp(&b.1)),
+            ColorSort::MostToLeast => colors.sort_by_key(|a| std::cmp::Reverse(a.1)),
+            ColorSort::LeastToMost => colors.sort_by_key(|a| a.1),
             ColorSort::Random => self.rng.shuffle(&mut colors),
         }
         colors.into_iter().map(|(c, _)| c).collect()

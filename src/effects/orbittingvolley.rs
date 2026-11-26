@@ -199,11 +199,10 @@ impl OrbittingVolley {
         let current_coord = ctx.terminal.arena[child_char.0 as usize]
             .motion
             .current_coord;
-        let color = self
+        let color = *self
             .launcher_gradient_coordinate_map
             .get(&current_coord)
-            .expect("launcher coord outside gradient map")
-            .clone();
+            .expect("launcher coord outside gradient map");
         let ch = &mut ctx.terminal.arena[child_char.0 as usize];
         let input_symbol = ch.input_symbol.clone();
         let uses_pre = ch.uses_input_preexisting_colors;
@@ -253,7 +252,7 @@ impl Effect for OrbittingVolley {
                 self.config.final_gradient_direction,
             )
             .map_err(EngineError::Other)?;
-        self.final_gradient_last_color = Some(final_gradient.spectrum.last().unwrap().clone());
+        self.final_gradient_last_color = Some(*final_gradient.spectrum.last().unwrap());
 
         let dynamic = ctx.terminal.config.existing_color_handling == ExistingColorHandling::Dynamic;
         let characters = {
@@ -267,8 +266,8 @@ impl Effect for OrbittingVolley {
                 (
                     ch.input_coord,
                     ch.input_symbol.clone(),
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.uses_input_preexisting_colors,
                 )
             };
@@ -276,17 +275,11 @@ impl Effect for OrbittingVolley {
                 ColorPair::new(input_fg, input_bg)
             } else {
                 ColorPair::new(
-                    Some(
-                        final_gradient_coordinate_map
-                            .get(&input_coord)
-                            .unwrap()
-                            .clone(),
-                    ),
+                    Some(*final_gradient_coordinate_map.get(&input_coord).unwrap()),
                     None,
                 )
             };
-            self.character_final_color_map
-                .insert(id, final_colors.clone());
+            self.character_final_color_map.insert(id, final_colors);
             {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 let input_path = ch
@@ -353,7 +346,7 @@ impl Effect for OrbittingVolley {
         }
         let main_character = self.launchers[0].character;
         {
-            let color = self.final_gradient_last_color.clone();
+            let color = self.final_gradient_last_color;
             let ch = &mut ctx.terminal.arena[main_character.0 as usize];
             let input_symbol = ch.input_symbol.clone();
             let uses_pre = ch.uses_input_preexisting_colors;
@@ -408,11 +401,10 @@ impl Effect for OrbittingVolley {
                 let current_coord = ctx.terminal.arena[main_character.0 as usize]
                     .motion
                     .current_coord;
-                let color = self
+                let color = *self
                     .launcher_gradient_coordinate_map
                     .get(&current_coord)
-                    .expect("main launcher coord outside gradient map")
-                    .clone();
+                    .expect("main launcher coord outside gradient map");
                 let symbol = self.config.top_launcher_symbol.clone();
                 let ch = &mut ctx.terminal.arena[main_character.0 as usize];
                 let input_symbol = ch.input_symbol.clone();

@@ -310,7 +310,7 @@ impl EasingTracker {
             self.progress_ratio = self.current_step as f64 / self.total_steps as f64;
             self.eased_value = self.easing_function.ease(self.progress_ratio);
             if self.clamp {
-                self.eased_value = self.eased_value.min(1.0).max(0.0);
+                self.eased_value = self.eased_value.clamp(0.0, 1.0);
             }
             self.step_delta = self.eased_value - self.last_eased_value;
             self.last_eased_value = self.eased_value;

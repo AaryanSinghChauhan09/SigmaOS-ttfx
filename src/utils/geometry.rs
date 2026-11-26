@@ -68,7 +68,7 @@ pub fn find_coords_on_circle(
         x += x_diff;
         let y = origin.row as f64 + radius as f64 * angle.sin();
         let point = Coord::new(round_half_even(x), round_half_even(y));
-        if seen.as_mut().map_or(true, |seen| seen.insert(point)) {
+        if seen.as_mut().is_none_or(|seen| seen.insert(point)) {
             points.push(point);
         }
     }

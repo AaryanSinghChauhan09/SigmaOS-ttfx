@@ -542,10 +542,8 @@ impl Spotlights {
                 let off = *self.yoff.at((x - h).unsigned_abs() as usize);
                 let lo = (v - off).max(1);
                 let hi = (v + off).min(height);
-                let mut cell = ((x - 1) * height + (lo - 1)) as usize;
                 for y in lo..=hi {
-                    let at = *self.grid.at(cell);
-                    cell += 1;
+                    let at = *self.grid.at(((x - 1) * height + (y - 1)) as usize);
                     if at == NONE {
                         continue;
                     }

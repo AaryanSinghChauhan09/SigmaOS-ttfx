@@ -112,13 +112,10 @@ impl Effect for Rain {
             let final_colors = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 if dynamic {
-                    ColorPair::new(
-                        ch.animation.input_fg_color.clone(),
-                        ch.animation.input_bg_color.clone(),
-                    )
+                    ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
                 } else {
                     ColorPair::new(
-                        Some(final_gradient_mapping.get(&ch.input_coord).unwrap().clone()),
+                        Some(*final_gradient_mapping.get(&ch.input_coord).unwrap()),
                         None,
                     )
                 }
@@ -136,7 +133,7 @@ impl Effect for Rain {
                     ch.uses_input_preexisting_colors,
                 )
             };
-            let raindrop_color = ctx.rng.choice(&self.config.rain_colors).clone();
+            let raindrop_color = *ctx.rng.choice(&self.config.rain_colors);
             let rain_scn = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation.new_scene(false, None, None, "", uses_pre)
@@ -152,7 +149,7 @@ impl Effect for Rain {
                         &rain_symbol,
                         1,
                         VisualParams {
-                            colors: Some(ColorPair::new(Some(raindrop_color.clone()), None)),
+                            colors: Some(ColorPair::new(Some(raindrop_color), None)),
                             ..Default::default()
                         },
                     )
@@ -162,18 +159,18 @@ impl Effect for Rain {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation.new_scene(false, None, None, "", uses_pre)
             };
-            let final_colors = self.character_final_color_map.get(&id).unwrap().clone();
+            let final_colors = *self.character_final_color_map.get(&id).unwrap();
             if dynamic {
                 let fg_gradient = match &final_colors.fg_color {
                     Some(fg) => Some(
-                        Gradient::with_steps(&[raindrop_color.clone(), fg.clone()], 7, false)
+                        Gradient::with_steps(&[raindrop_color, *fg], 7, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
                 let bg_gradient = match &final_colors.bg_color {
                     Some(bg) => Some(
-                        Gradient::with_steps(&[raindrop_color.clone(), bg.clone()], 7, false)
+                        Gradient::with_steps(&[raindrop_color, *bg], 7, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
@@ -183,7 +180,7 @@ impl Effect for Rain {
                 if fg_gradient.is_some() || bg_gradient.is_some() {
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             3,
                             fg_gradient.as_ref(),
                             bg_gradient.as_ref(),
@@ -202,17 +199,16 @@ impl Effect for Rain {
                         .map_err(EngineError::Other)?;
                 }
             } else {
-                let final_fg = final_colors.fg_color.clone().expect("gradient mapping fg");
-                let raindrop_gradient =
-                    Gradient::with_steps(&[raindrop_color.clone(), final_fg], 7, false)
-                        .map_err(EngineError::Other)?;
+                let final_fg = final_colors.fg_color.expect("gradient mapping fg");
+                let raindrop_gradient = Gradient::with_steps(&[raindrop_color, final_fg], 7, false)
+                    .map_err(EngineError::Other)?;
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
                     .scenes
                     .get_mut(&fade_scn)
                     .unwrap()
                     .apply_gradient_to_symbols(
-                        &[input_symbol.clone()],
+                        std::slice::from_ref(&input_symbol),
                         3,
                         Some(&raindrop_gradient),
                         None,

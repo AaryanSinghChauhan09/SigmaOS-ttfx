@@ -103,8 +103,8 @@ impl Decrypt {
             let ch = &ctx.terminal.arena[id.0 as usize];
             (
                 ch.input_symbol.clone(),
-                ch.animation.input_fg_color.clone(),
-                ch.animation.input_bg_color.clone(),
+                ch.animation.input_fg_color,
+                ch.animation.input_bg_color,
                 ch.uses_input_preexisting_colors,
             )
         };
@@ -113,7 +113,7 @@ impl Decrypt {
             ch.animation
                 .new_scene(false, None, None, "fast_decrypt", uses_pre);
         }
-        let color = ctx.rng.choice(&self.config.ciphertext_colors).clone();
+        let color = *ctx.rng.choice(&self.config.ciphertext_colors);
         for _ in 0..80 {
             let symbol = ctx.rng.choice(&self.encrypted_symbols).clone();
             let ch = &mut ctx.terminal.arena[id.0 as usize];
@@ -125,7 +125,7 @@ impl Decrypt {
                     &symbol,
                     2,
                     VisualParams {
-                        colors: Some(ColorPair::new(Some(color.clone()), None)),
+                        colors: Some(ColorPair::new(Some(color), None)),
                         ..Default::default()
                     },
                 )
@@ -156,7 +156,7 @@ impl Decrypt {
                     &symbol,
                     duration,
                     VisualParams {
-                        colors: Some(ColorPair::new(Some(color.clone()), None)),
+                        colors: Some(ColorPair::new(Some(color), None)),
                         ..Default::default()
                     },
                 )
@@ -171,15 +171,13 @@ impl Decrypt {
         if dynamic {
             let fg_gradient = match &input_fg {
                 Some(fg) => Some(
-                    Gradient::with_steps(&[white.clone(), fg.clone()], 10, false)
-                        .map_err(EngineError::Other)?,
+                    Gradient::with_steps(&[white, *fg], 10, false).map_err(EngineError::Other)?,
                 ),
                 None => None,
             };
             let bg_gradient = match &input_bg {
                 Some(bg) => Some(
-                    Gradient::with_steps(&[white.clone(), bg.clone()], 10, false)
-                        .map_err(EngineError::Other)?,
+                    Gradient::with_steps(&[white, *bg], 10, false).map_err(EngineError::Other)?,
                 ),
                 None => None,
             };
@@ -188,7 +186,7 @@ impl Decrypt {
             if fg_gradient.is_some() || bg_gradient.is_some() {
                 scene
                     .apply_gradient_to_symbols(
-                        &[input_symbol.clone()],
+                        std::slice::from_ref(&input_symbol),
                         5,
                         fg_gradient.as_ref(),
                         bg_gradient.as_ref(),
@@ -212,7 +210,6 @@ impl Decrypt {
                 .get(&id)
                 .unwrap()
                 .fg_color
-                .clone()
                 .expect("gradient mapping fg");
             let discovered_gradient =
                 Gradient::with_steps(&[white, final_fg], 10, false).map_err(EngineError::Other)?;
@@ -222,7 +219,7 @@ impl Decrypt {
                 .get_mut("discovered")
                 .unwrap()
                 .apply_gradient_to_symbols(
-                    &[input_symbol.clone()],
+                    std::slice::from_ref(&input_symbol),
                     5,
                     Some(&discovered_gradient),
                     None,
@@ -247,7 +244,7 @@ impl Decrypt {
                     .new_scene(false, None, None, "typing", uses_pre);
             }
             for block_char in ["▉", "▓", "▒", "░"] {
-                let color = ctx.rng.choice(&self.config.ciphertext_colors).clone();
+                let color = *ctx.rng.choice(&self.config.ciphertext_colors);
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
                     .scenes
@@ -264,7 +261,7 @@ impl Decrypt {
                     .map_err(EngineError::Other)?;
             }
             let symbol = ctx.rng.choice(&self.encrypted_symbols).clone();
-            let color = ctx.rng.choice(&self.config.ciphertext_colors).clone();
+            let color = *ctx.rng.choice(&self.config.ciphertext_colors);
             {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
@@ -354,13 +351,10 @@ impl Effect for Decrypt {
             let final_colors = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 if dynamic {
-                    ColorPair::new(
-                        ch.animation.input_fg_color.clone(),
-                        ch.animation.input_bg_color.clone(),
-                    )
+                    ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
                 } else {
                     ColorPair::new(
-                        Some(final_gradient_mapping.get(&ch.input_coord).unwrap().clone()),
+                        Some(*final_gradient_mapping.get(&ch.input_coord).unwrap()),
                         None,
                     )
                 }

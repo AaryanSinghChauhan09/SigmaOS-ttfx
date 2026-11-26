@@ -173,7 +173,7 @@ impl Cli {
             tab_width: self.tab_width,
             xterm_colors: self.xterm_colors,
             no_color: self.no_color,
-            terminal_background_color: self.terminal_background_color.clone(),
+            terminal_background_color: self.terminal_background_color,
             existing_color_handling: self.existing_color_handling,
             wrap_text: self.wrap_text,
             frame_rate: self.frame_rate,

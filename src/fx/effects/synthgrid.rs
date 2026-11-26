@@ -301,7 +301,9 @@ impl Effect for SynthGrid {
                         colors as u64,
                         &mut draws[..2 * frame_count],
                     );
-                    for (frame, pair) in frames[..frame_count].iter_mut().zip(draws.chunks_exact(2))
+                    for (frame, pair) in frames[..frame_count]
+                        .iter_mut()
+                        .zip(draws.as_chunks::<2>().0.iter())
                     {
                         frame.visual = visual_of(e, pair[0] as usize, pair[1] as usize);
                     }

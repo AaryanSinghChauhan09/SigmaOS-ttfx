@@ -234,10 +234,9 @@ impl SynthGrid {
                 let ch = &mut ctx.terminal.arena[effect_char.0 as usize];
                 let uses_pre = ch.uses_input_preexisting_colors;
                 let scene_id = ch.animation.new_scene(false, None, None, "", uses_pre);
-                let fg = grid_gradient_mapping
+                let fg = *grid_gradient_mapping
                     .get(&coord)
-                    .expect("grid gradient mapping missing coord")
-                    .clone();
+                    .expect("grid gradient mapping missing coord");
                 ch.animation
                     .scenes
                     .get_mut(&scene_id)
@@ -327,17 +326,13 @@ impl Effect for SynthGrid {
         for id in characters {
             let ch = &ctx.terminal.arena[id.0 as usize];
             let colors = if dynamic {
-                ColorPair::new(
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
-                )
+                ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
             } else if ch.input_symbol != " " {
                 ColorPair::new(
                     Some(
-                        text_gradient_mapping
+                        *text_gradient_mapping
                             .get(&ch.input_coord)
-                            .expect("text gradient mapping")
-                            .clone(),
+                            .expect("text gradient mapping"),
                     ),
                     None,
                 )
@@ -470,7 +465,7 @@ impl Effect for SynthGrid {
                 let frame_count = ctx.rng.randint(15, 30);
                 for _ in 0..frame_count {
                     let symbol = ctx.rng.choice(&self.config.text_generation_symbols).clone();
-                    let fg = ctx.rng.choice(&text_gradient.spectrum).clone();
+                    let fg = *ctx.rng.choice(&text_gradient.spectrum);
                     ctx.terminal.arena[character.0 as usize]
                         .animation
                         .scenes

@@ -102,8 +102,8 @@ impl Effect for Slice {
             let (input_fg, input_bg, input_coord, input_symbol, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                     ch.input_symbol.clone(),
                     ch.uses_input_preexisting_colors,
@@ -113,12 +113,11 @@ impl Effect for Slice {
                 ColorPair::new(input_fg, input_bg)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 )
             };
-            self.character_final_color_map
-                .insert(id, final_colors.clone());
+            self.character_final_color_map.insert(id, final_colors);
             let ch = &mut ctx.terminal.arena[id.0 as usize];
             ch.animation.set_appearance(
                 &input_symbol,

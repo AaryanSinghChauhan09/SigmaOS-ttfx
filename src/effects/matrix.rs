@@ -244,7 +244,7 @@ impl RainColumn {
                     ctx,
                     next_char,
                     &symbol,
-                    ColorPair::new(Some(config.highlight_color.clone()), None),
+                    ColorPair::new(Some(config.highlight_color), None),
                 );
                 let previous_character = self.visible_characters.last().copied();
                 // if there is a previous character, remove the highlight
@@ -254,7 +254,7 @@ impl RainColumn {
                         .current_character_visual
                         .symbol
                         .clone();
-                    let fg = ctx.rng.choice(rain_colors).clone();
+                    let fg = *ctx.rng.choice(rain_colors);
                     set_appearance(
                         ctx,
                         previous_character,
@@ -281,7 +281,7 @@ impl RainColumn {
                         .current_character_visual
                         .symbol
                         .clone();
-                    let fg = ctx.rng.choice(rain_colors).clone();
+                    let fg = *ctx.rng.choice(rain_colors);
                     set_appearance(ctx, last_char, &symbol, ColorPair::new(Some(fg), None));
                 }
 
@@ -341,12 +341,7 @@ impl RainColumn {
 
             match (next_symbol, next_color) {
                 (Some(symbol), Some(color)) => {
-                    set_appearance(
-                        ctx,
-                        character,
-                        symbol,
-                        ColorPair::new(Some(color.clone()), None),
-                    );
+                    set_appearance(ctx, character, symbol, ColorPair::new(Some(*color), None));
                 }
                 (Some(symbol), None) => {
                     let color = ctx.terminal.arena[character.0 as usize]
@@ -354,7 +349,7 @@ impl RainColumn {
                         .current_character_visual
                         .colors
                         .as_ref()
-                        .and_then(|colors| colors.fg_color.clone());
+                        .and_then(|colors| colors.fg_color);
                     set_appearance(ctx, character, symbol, ColorPair::new(color, None));
                 }
                 (None, Some(color)) => {
@@ -363,12 +358,7 @@ impl RainColumn {
                         .current_character_visual
                         .symbol
                         .clone();
-                    set_appearance(
-                        ctx,
-                        character,
-                        &symbol,
-                        ColorPair::new(Some(color.clone()), None),
-                    );
+                    set_appearance(ctx, character, &symbol, ColorPair::new(Some(*color), None));
                 }
                 (None, None) => unreachable!("no-change case returned above"),
             }
@@ -482,8 +472,8 @@ impl Effect for Matrix {
                 (
                     ch.input_symbol.clone(),
                     ch.input_coord,
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.uses_input_preexisting_colors,
                 )
             };
@@ -491,37 +481,29 @@ impl Effect for Matrix {
                 ColorPair::new(input_fg, input_bg)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 )
             };
             self.character_final_color_map
-                .insert(character, final_colors.clone());
-            let final_fg_color = final_colors.fg_color.clone();
-            let final_bg_color = final_colors.bg_color.clone();
+                .insert(character, final_colors);
+            let final_fg_color = final_colors.fg_color;
+            let final_bg_color = final_colors.bg_color;
             let resolve_scn = ctx.terminal.arena[character.0 as usize]
                 .animation
                 .new_scene(false, None, None, "resolve", uses_pre);
             if dynamic {
                 let fg_gradient = match &final_fg_color {
                     Some(fg) => Some(
-                        Gradient::with_steps(
-                            &[self.config.highlight_color.clone(), fg.clone()],
-                            8,
-                            false,
-                        )
-                        .map_err(EngineError::Other)?,
+                        Gradient::with_steps(&[self.config.highlight_color, *fg], 8, false)
+                            .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
                 let bg_gradient = match &final_bg_color {
                     Some(bg) => Some(
-                        Gradient::with_steps(
-                            &[self.config.highlight_color.clone(), bg.clone()],
-                            8,
-                            false,
-                        )
-                        .map_err(EngineError::Other)?,
+                        Gradient::with_steps(&[self.config.highlight_color, *bg], 8, false)
+                            .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
@@ -533,7 +515,7 @@ impl Effect for Matrix {
                 if fg_gradient.is_some() || bg_gradient.is_some() {
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             self.config.final_gradient_frames,
                             fg_gradient.as_ref(),
                             bg_gradient.as_ref(),
@@ -553,12 +535,9 @@ impl Effect for Matrix {
                 }
             } else {
                 let final_fg_color = final_fg_color.expect("non-dynamic final fg color");
-                let resolve_gradient = Gradient::with_steps(
-                    &[self.config.highlight_color.clone(), final_fg_color],
-                    8,
-                    false,
-                )
-                .map_err(EngineError::Other)?;
+                let resolve_gradient =
+                    Gradient::with_steps(&[self.config.highlight_color, final_fg_color], 8, false)
+                        .map_err(EngineError::Other)?;
                 for color in &resolve_gradient.spectrum {
                     ctx.terminal.arena[character.0 as usize]
                         .animation
@@ -569,7 +548,7 @@ impl Effect for Matrix {
                             &input_symbol,
                             self.config.final_gradient_frames,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(*color), None)),
                                 ..Default::default()
                             },
                         )

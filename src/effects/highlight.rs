@@ -110,8 +110,8 @@ impl Effect for Highlight {
             let (input_fg, input_bg, input_coord, input_symbol, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                     ch.input_symbol.clone(),
                     ch.uses_input_preexisting_colors,
@@ -121,25 +121,19 @@ impl Effect for Highlight {
                 (input_fg, input_bg)
             } else {
                 (
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 )
             };
-            self.character_final_color_map
-                .insert(id, base_color.clone());
-            let base_colors = ColorPair::new(base_color.clone(), input_bg_color.clone());
+            self.character_final_color_map.insert(id, base_color);
+            let base_colors = ColorPair::new(base_color, input_bg_color);
             let highlight_gradient = match &base_color {
                 Some(base) => {
                     let highlight_color =
                         Animation::adjust_color_brightness(base, self.config.highlight_brightness);
                     Some(
                         Gradient::new(
-                            &[
-                                base.clone(),
-                                highlight_color.clone(),
-                                highlight_color,
-                                base.clone(),
-                            ],
+                            &[*base, highlight_color, highlight_color, *base],
                             &[3, self.config.highlight_width, 3],
                             false,
                             false,
@@ -155,7 +149,7 @@ impl Effect for Highlight {
                     &input_symbol,
                     uses_pre,
                     Some(&input_symbol),
-                    Some(base_colors.clone()),
+                    Some(base_colors),
                 );
                 ch.animation
                     .new_scene(false, None, None, "highlight", uses_pre);
@@ -167,10 +161,7 @@ impl Effect for Highlight {
                                 &input_symbol,
                                 2,
                                 VisualParams {
-                                    colors: Some(ColorPair::new(
-                                        Some(color.clone()),
-                                        input_bg_color.clone(),
-                                    )),
+                                    colors: Some(ColorPair::new(Some(*color), input_bg_color)),
                                     ..Default::default()
                                 },
                             )
@@ -182,7 +173,7 @@ impl Effect for Highlight {
                             &input_symbol,
                             2,
                             VisualParams {
-                                colors: Some(base_colors.clone()),
+                                colors: Some(base_colors),
                                 ..Default::default()
                             },
                         )

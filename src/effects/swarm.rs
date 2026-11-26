@@ -162,29 +162,25 @@ impl Effect for Swarm {
         for &id in &characters {
             let ch = &ctx.terminal.arena[id.0 as usize];
             let final_colors = if dynamic {
-                ColorPair::new(
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
-                )
+                ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&ch.input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&ch.input_coord).unwrap()),
                     None,
                 )
             };
             self.character_final_color_map.insert(id, final_colors);
         }
-        let flash_list: Vec<Color> = (0..10).map(|_| self.config.flash_color.clone()).collect();
+        let flash_list: Vec<Color> = (0..10).map(|_| self.config.flash_color).collect();
         let canvas_right = ctx.terminal.canvas.right;
         let canvas_top = ctx.terminal.canvas.top;
         // stands in for upstream's process-wide find_coords_on_circle lru_cache
         let mut circle_cache: HashMap<Coord, Vec<Coord>> = HashMap::new();
         for swarm_index in 0..self.swarms.len() {
             let swarm = self.swarms[swarm_index].clone();
-            let base = ctx.rng.choice(&self.config.base_color).clone();
-            let swarm_gradient =
-                Gradient::with_steps(&[base, self.config.flash_color.clone()], 7, false)
-                    .map_err(EngineError::Other)?;
+            let base = *ctx.rng.choice(&self.config.base_color);
+            let swarm_gradient = Gradient::with_steps(&[base, self.config.flash_color], 7, false)
+                .map_err(EngineError::Other)?;
             let swarm_gradient_mirror: Vec<Color> = swarm_gradient
                 .spectrum
                 .iter()
@@ -269,7 +265,7 @@ impl Effect for Swarm {
                                 &input_symbol,
                                 1,
                                 VisualParams {
-                                    colors: Some(ColorPair::new(Some(step.clone()), None)),
+                                    colors: Some(ColorPair::new(Some(*step), None)),
                                     ..Default::default()
                                 },
                             )
@@ -362,11 +358,11 @@ impl Effect for Swarm {
                     let ch = &mut ctx.terminal.arena[id.0 as usize];
                     ch.animation.new_scene(false, None, None, "", uses_pre)
                 };
-                let final_colors = self.character_final_color_map.get(&id).unwrap().clone();
+                let final_colors = *self.character_final_color_map.get(&id).unwrap();
                 if dynamic {
                     if final_colors.fg_color.is_none() && final_colors.bg_color.is_none() {
                         let clear_gradient = Gradient::with_steps(
-                            &[self.config.flash_color.clone(), dynamic_clear_color.clone()],
+                            &[self.config.flash_color, dynamic_clear_color],
                             10,
                             false,
                         )
@@ -379,7 +375,7 @@ impl Effect for Swarm {
                                     &input_symbol,
                                     3,
                                     VisualParams {
-                                        colors: Some(ColorPair::new(Some(step.clone()), None)),
+                                        colors: Some(ColorPair::new(Some(*step), None)),
                                         ..Default::default()
                                     },
                                 )
@@ -398,23 +394,15 @@ impl Effect for Swarm {
                     } else {
                         let fg_gradient = match &final_colors.fg_color {
                             Some(fg) => Some(
-                                Gradient::with_steps(
-                                    &[self.config.flash_color.clone(), fg.clone()],
-                                    10,
-                                    false,
-                                )
-                                .map_err(EngineError::Other)?,
+                                Gradient::with_steps(&[self.config.flash_color, *fg], 10, false)
+                                    .map_err(EngineError::Other)?,
                             ),
                             None => None,
                         };
                         let bg_gradient = match &final_colors.bg_color {
                             Some(bg) => Some(
-                                Gradient::with_steps(
-                                    &[self.config.flash_color.clone(), bg.clone()],
-                                    10,
-                                    false,
-                                )
-                                .map_err(EngineError::Other)?,
+                                Gradient::with_steps(&[self.config.flash_color, *bg], 10, false)
+                                    .map_err(EngineError::Other)?,
                             ),
                             None => None,
                         };
@@ -424,7 +412,7 @@ impl Effect for Swarm {
                             .get_mut(&input_scn)
                             .unwrap()
                             .apply_gradient_to_symbols(
-                                &[input_symbol.clone()],
+                                std::slice::from_ref(&input_symbol),
                                 3,
                                 fg_gradient.as_ref(),
                                 bg_gradient.as_ref(),
@@ -432,13 +420,10 @@ impl Effect for Swarm {
                             .map_err(EngineError::Other)?;
                     }
                 } else {
-                    let final_fg = final_colors.fg_color.clone().expect("gradient mapping fg");
-                    let landing_gradient = Gradient::with_steps(
-                        &[self.config.flash_color.clone(), final_fg],
-                        10,
-                        false,
-                    )
-                    .map_err(EngineError::Other)?;
+                    let final_fg = final_colors.fg_color.expect("gradient mapping fg");
+                    let landing_gradient =
+                        Gradient::with_steps(&[self.config.flash_color, final_fg], 10, false)
+                            .map_err(EngineError::Other)?;
                     let ch = &mut ctx.terminal.arena[id.0 as usize];
                     let scene = ch.animation.scenes.get_mut(&input_scn).unwrap();
                     for step in &landing_gradient.spectrum {
@@ -447,7 +432,7 @@ impl Effect for Swarm {
                                 &input_symbol,
                                 3,
                                 VisualParams {
-                                    colors: Some(ColorPair::new(Some(step.clone()), None)),
+                                    colors: Some(ColorPair::new(Some(*step), None)),
                                     ..Default::default()
                                 },
                             )

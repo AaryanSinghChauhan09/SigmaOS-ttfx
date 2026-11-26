@@ -275,10 +275,10 @@ impl EngineCtx {
                         return Err(format!("path not found: {pid}"));
                     }
                 }
-                EventAction::ActivateScene(sid) | EventAction::DeactivateScene(Some(sid)) => {
-                    if !ch.animation.scenes.contains_key(sid) {
-                        return Err(format!("scene not found: {sid}"));
-                    }
+                EventAction::ActivateScene(sid) | EventAction::DeactivateScene(Some(sid))
+                    if !ch.animation.scenes.contains_key(sid) =>
+                {
+                    return Err(format!("scene not found: {sid}"));
                 }
                 _ => {}
             }

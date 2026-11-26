@@ -1279,9 +1279,11 @@ mod chunk_tests {
                 *b = if x >> 60 == 0 { (x >> 32) as u8 | 1 } else { 0 };
             }
             let want = chunk
-                .chunks_exact(4)
+                .as_chunks::<4>()
+                .0
+                .iter()
                 .enumerate()
-                .fold(0u32, |m, (i, c)| m | ((c != [0; 4]) as u32) << i);
+                .fold(0u32, |m, (i, c)| m | ((*c != [0; 4]) as u32) << i);
             assert_eq!(chunk_blocks(&mut chunk), want);
             assert_eq!(chunk, [0; 64]);
         }

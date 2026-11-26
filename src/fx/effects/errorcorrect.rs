@@ -63,7 +63,7 @@ struct Remaining<'a> {
 impl<'a> Remaining<'a> {
     fn new(items: &'a [u32]) -> Self {
         let n = items.len();
-        let tree = (0..=n).map(|i| (i & i.wrapping_neg()) as u32).collect();
+        let tree = (0..=n).map(|i| i.isolate_lowest_one() as u32).collect();
         let top = if n == 0 { 0 } else { 1 << n.ilog2() };
         Remaining {
             items,
@@ -89,7 +89,7 @@ impl<'a> Remaining<'a> {
         let mut i = pos + 1;
         while i <= n {
             self.tree[i] -= 1;
-            i += i & i.wrapping_neg();
+            i += i.isolate_lowest_one();
         }
         self.len -= 1;
         self.items[pos]
@@ -292,7 +292,7 @@ impl Effect for ErrorCorrect {
                     visual: error_block,
                     duration: 3,
                 }; 20];
-                for pair in frames.chunks_exact_mut(2) {
+                for pair in frames.as_chunks_mut::<2>().0 {
                     pair[1].visual = white_visual;
                 }
                 e.add_frames_visual(error, &frames).map_err(other)?;

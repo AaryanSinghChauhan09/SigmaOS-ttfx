@@ -149,17 +149,17 @@ impl Print {
                 ch.animation.new_scene(false, None, None, "", uses_pre)
             };
             if dynamic {
-                let final_colors = self.character_final_color_map.get(&id).unwrap().clone();
+                let final_colors = *self.character_final_color_map.get(&id).unwrap();
                 let fg_gradient = match &final_colors.fg_color {
                     Some(fg) => Some(
-                        Gradient::with_steps(&[typing_head_color.clone(), fg.clone()], 5, false)
+                        Gradient::with_steps(&[typing_head_color, *fg], 5, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
                 let bg_gradient = match &final_colors.bg_color {
                     Some(bg) => Some(
-                        Gradient::with_steps(&[typing_head_color.clone(), bg.clone()], 5, false)
+                        Gradient::with_steps(&[typing_head_color, *bg], 5, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
@@ -184,12 +184,9 @@ impl Print {
                         )
                         .map_err(EngineError::Other)?;
                 } else {
-                    let head_gradient = Gradient::with_steps(
-                        &[typing_head_color.clone(), typing_head_color.clone()],
-                        4,
-                        false,
-                    )
-                    .map_err(EngineError::Other)?;
+                    let head_gradient =
+                        Gradient::with_steps(&[typing_head_color, typing_head_color], 4, false)
+                            .map_err(EngineError::Other)?;
                     let ch = &mut ctx.terminal.arena[id.0 as usize];
                     let scene = ch.animation.scenes.get_mut(&typed_animation).unwrap();
                     scene
@@ -222,11 +219,9 @@ impl Print {
                     .get(&id)
                     .unwrap()
                     .fg_color
-                    .clone()
                     .expect("final fg color present");
-                let color_gradient =
-                    Gradient::with_steps(&[typing_head_color.clone(), final_fg], 5, false)
-                        .map_err(EngineError::Other)?;
+                let color_gradient = Gradient::with_steps(&[typing_head_color, final_fg], 5, false)
+                    .map_err(EngineError::Other)?;
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
                     .scenes
@@ -306,10 +301,7 @@ impl Effect for Print {
             let final_colors = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 if dynamic {
-                    ColorPair::new(
-                        ch.animation.input_fg_color.clone(),
-                        ch.animation.input_bg_color.clone(),
-                    )
+                    ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
                 } else {
                     ColorPair::new(
                         Some(

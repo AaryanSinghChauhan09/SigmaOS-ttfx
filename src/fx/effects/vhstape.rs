@@ -452,14 +452,14 @@ impl Effect for VhsTape {
                 let scene = e.scene_new(slot, bwd, false, Some(SyncMetric::Step), None);
                 e.add_frames_visual(scene, &frames).map_err(other)?;
                 // snow: 25 draws of (symbol, color), then final_snow's 30
-                for pair in draws.chunks_exact_mut(2) {
+                for pair in draws.as_chunks_mut::<2>().0 {
                     pair[0] = e.rng.choice_index(SNOW_CHARS.len()) as u32;
                     pair[1] = e.rng.choice_index(noise_count) as u32;
                 }
                 let (snow_draws, final_draws) = draws.split_at(2 * SNOW_FRAMES);
                 let snow_frames = |draws: &[u32], frames: &mut Vec<Frame>| {
                     frames.clear();
-                    frames.extend(draws.chunks_exact(2).map(|pair| Frame {
+                    frames.extend(draws.as_chunks::<2>().0.iter().map(|pair| Frame {
                         visual: snow_memo[pair[1] as usize * SNOW_CHARS.len() + pair[0] as usize],
                         duration: 2,
                     }));

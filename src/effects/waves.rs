@@ -141,8 +141,8 @@ impl Effect for Waves {
             let (input_fg, input_bg, input_coord, input_symbol, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                     ch.input_symbol.clone(),
                     ch.uses_input_preexisting_colors,
@@ -152,12 +152,11 @@ impl Effect for Waves {
                 ColorPair::new(input_fg, input_bg)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 )
             };
-            self.character_final_color_map
-                .insert(id, final_colors.clone());
+            self.character_final_color_map.insert(id, final_colors);
 
             let wave_scn = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
@@ -186,8 +185,8 @@ impl Effect for Waves {
                 ch.animation.new_scene(false, None, None, "", uses_pre)
             };
             if dynamic {
-                let final_fg_color = final_colors.fg_color.clone();
-                let final_bg_color = final_colors.bg_color.clone();
+                let final_fg_color = final_colors.fg_color;
+                let final_bg_color = final_colors.bg_color;
                 if final_fg_color.is_none() && final_bg_color.is_none() {
                     let ch = &mut ctx.terminal.arena[id.0 as usize];
                     ch.animation
@@ -207,7 +206,7 @@ impl Effect for Waves {
                     let fg_gradient = match &final_fg_color {
                         Some(c) => Some(
                             Gradient::new(
-                                &[wave_gradient.spectrum.last().unwrap().clone(), c.clone()],
+                                &[*wave_gradient.spectrum.last().unwrap(), *c],
                                 &self.config.final_gradient_steps,
                                 false,
                                 false,
@@ -219,7 +218,7 @@ impl Effect for Waves {
                     let bg_gradient = match &final_bg_color {
                         Some(c) => Some(
                             Gradient::new(
-                                &[wave_gradient.spectrum.last().unwrap().clone(), c.clone()],
+                                &[*wave_gradient.spectrum.last().unwrap(), *c],
                                 &self.config.final_gradient_steps,
                                 false,
                                 false,
@@ -232,7 +231,7 @@ impl Effect for Waves {
                     let scene = ch.animation.scenes.get_mut(&final_scn).unwrap();
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             10,
                             fg_gradient.as_ref(),
                             bg_gradient.as_ref(),
@@ -244,7 +243,7 @@ impl Effect for Waves {
                                 &input_symbol,
                                 10,
                                 VisualParams {
-                                    colors: Some(ColorPair::new(None, final_bg_color.clone())),
+                                    colors: Some(ColorPair::new(None, final_bg_color)),
                                     ..Default::default()
                                 },
                             )
@@ -252,12 +251,9 @@ impl Effect for Waves {
                     }
                 }
             } else {
-                let final_fg_color = final_colors.fg_color.clone().expect("gradient mapping fg");
+                let final_fg_color = final_colors.fg_color.expect("gradient mapping fg");
                 let final_scene_gradient = Gradient::new(
-                    &[
-                        wave_gradient.spectrum.last().unwrap().clone(),
-                        final_fg_color,
-                    ],
+                    &[*wave_gradient.spectrum.last().unwrap(), final_fg_color],
                     &self.config.final_gradient_steps,
                     false,
                     false,
@@ -271,7 +267,7 @@ impl Effect for Waves {
                             &input_symbol,
                             10,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(step.clone()), None)),
+                                colors: Some(ColorPair::new(Some(*step), None)),
                                 ..Default::default()
                             },
                         )
@@ -287,7 +283,7 @@ impl Effect for Waves {
             .map_err(EngineError::Other)?;
             ctx.activate_scene(self, id, &wave_scn);
             if dynamic {
-                let final_colors = self.character_final_color_map.get(&id).unwrap().clone();
+                let final_colors = *self.character_final_color_map.get(&id).unwrap();
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation.set_appearance(
                     &input_symbol,

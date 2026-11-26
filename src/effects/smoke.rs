@@ -151,15 +151,15 @@ impl Effect for Smoke {
                 (
                     ch.input_coord,
                     ch.input_symbol.clone(),
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.uses_input_preexisting_colors,
                 )
             };
             let base_colors = if dynamic {
                 self.character_final_color_map
                     .insert(id, ColorPair::new(input_fg, input_bg));
-                ColorPair::new(Some(blk.clone()), None)
+                ColorPair::new(Some(blk), None)
             } else {
                 self.character_final_color_map.insert(
                     id,
@@ -168,12 +168,12 @@ impl Effect for Smoke {
                             final_gradient_mapping
                                 .get(&input_coord)
                                 .cloned()
-                                .unwrap_or_else(|| blk.clone()),
+                                .unwrap_or(blk),
                         ),
                         None,
                     ),
                 );
-                ColorPair::new(Some(self.config.starting_color.clone()), None)
+                ColorPair::new(Some(self.config.starting_color), None)
             };
             let paint_chars = [input_symbol.clone()];
             let paint_scn = {
@@ -181,7 +181,7 @@ impl Effect for Smoke {
                 ch.animation.new_scene(false, None, None, "paint", uses_pre)
             };
             if dynamic {
-                let colors = self.character_final_color_map.get(&id).unwrap().clone();
+                let colors = *self.character_final_color_map.get(&id).unwrap();
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
                     .scenes
@@ -202,7 +202,6 @@ impl Effect for Smoke {
                     .get(&id)
                     .unwrap()
                     .fg_color
-                    .clone()
                     .expect("final fg color");
                 // Gradient(*final_gradient_stops, final_fg_color, steps=5)
                 let paint_stops: Vec<Color> = self
@@ -228,7 +227,7 @@ impl Effect for Smoke {
                 ch.animation.new_scene(false, None, None, "smoke", uses_pre)
             };
             if dynamic {
-                let colors = self.character_final_color_map.get(&id).unwrap().clone();
+                let colors = *self.character_final_color_map.get(&id).unwrap();
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 let scene = ch.animation.scenes.get_mut(&smoke_scn).unwrap();
                 for smoke_symbol in &self.config.smoke_symbols {
@@ -237,7 +236,7 @@ impl Effect for Smoke {
                             smoke_symbol,
                             10,
                             VisualParams {
-                                colors: Some(colors.clone()),
+                                colors: Some(colors),
                                 ..Default::default()
                             },
                         )

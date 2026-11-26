@@ -97,12 +97,8 @@ impl Blackhole {
         let mut gradient_map: Vec<Gradient> = Vec::new();
         for color in &starfield_colors {
             gradient_map.push(
-                Gradient::with_steps(
-                    &[color.clone(), Color::from_hex("#000000").unwrap()],
-                    10,
-                    false,
-                )
-                .map_err(EngineError::Other)?,
+                Gradient::with_steps(&[*color, Color::from_hex("#000000").unwrap()], 10, false)
+                    .map_err(EngineError::Other)?,
             );
         }
         let mut available_chars: Vec<CharId> = ctx.terminal.input_characters.clone();
@@ -148,10 +144,7 @@ impl Blackhole {
                         "*",
                         1,
                         VisualParams {
-                            colors: Some(ColorPair::new(
-                                Some(self.config.blackhole_color.clone()),
-                                None,
-                            )),
+                            colors: Some(ColorPair::new(Some(self.config.blackhole_color), None)),
                             ..Default::default()
                         },
                     )
@@ -199,7 +192,7 @@ impl Blackhole {
                 let _ = &starfield_colors;
                 ctx.rng.choice_index(starfield_colors.len())
             };
-            let star_color = starfield_colors[star_color_index].clone();
+            let star_color = starfield_colors[star_color_index];
             let starting_scn = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 let uses_pre = ch.uses_input_preexisting_colors;
@@ -212,7 +205,7 @@ impl Blackhole {
                         star_symbol,
                         1,
                         VisualParams {
-                            colors: Some(ColorPair::new(Some(star_color.clone()), None)),
+                            colors: Some(ColorPair::new(Some(star_color), None)),
                             ..Default::default()
                         },
                     )
@@ -249,7 +242,7 @@ impl Blackhole {
                                 star_symbol,
                                 1,
                                 VisualParams {
-                                    colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                    colors: Some(ColorPair::new(Some(*color), None)),
                                     ..Default::default()
                                 },
                             )
@@ -342,7 +335,7 @@ impl Blackhole {
                 };
                 for _ in 0..3 {
                     for symbol in unstable_symbols {
-                        let color = ctx.rng.choice(&self.config.star_colors).clone();
+                        let color = *ctx.rng.choice(&self.config.star_colors);
                         let ch = &mut ctx.terminal.arena[id.0 as usize];
                         ch.animation
                             .scenes
@@ -404,8 +397,8 @@ impl Blackhole {
                 (
                     ch.input_coord,
                     ch.input_symbol.clone(),
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.uses_input_preexisting_colors,
                 )
             };
@@ -441,7 +434,7 @@ impl Blackhole {
                     .map_err(EngineError::Other)?;
                 path_id
             };
-            let explode_star_color = ctx.rng.choice(&star_colors).clone();
+            let explode_star_color = *ctx.rng.choice(&star_colors);
             let explode_scn = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 let scene_id = ch.animation.new_scene(false, None, None, "", uses_pre);
@@ -453,7 +446,7 @@ impl Blackhole {
                         &input_symbol,
                         1,
                         VisualParams {
-                            colors: Some(ColorPair::new(Some(explode_star_color.clone()), None)),
+                            colors: Some(ColorPair::new(Some(explode_star_color), None)),
                             ..Default::default()
                         },
                     )
@@ -483,23 +476,15 @@ impl Blackhole {
                 } else {
                     let cooling_gradient_fg = match &input_fg {
                         Some(fg) => Some(
-                            Gradient::with_steps(
-                                &[explode_star_color.clone(), fg.clone()],
-                                10,
-                                false,
-                            )
-                            .map_err(EngineError::Other)?,
+                            Gradient::with_steps(&[explode_star_color, *fg], 10, false)
+                                .map_err(EngineError::Other)?,
                         ),
                         None => None,
                     };
                     let cooling_gradient_bg = match &input_bg {
                         Some(bg) => Some(
-                            Gradient::with_steps(
-                                &[explode_star_color.clone(), bg.clone()],
-                                10,
-                                false,
-                            )
-                            .map_err(EngineError::Other)?,
+                            Gradient::with_steps(&[explode_star_color, *bg], 10, false)
+                                .map_err(EngineError::Other)?,
                         ),
                         None => None,
                     };
@@ -509,7 +494,7 @@ impl Blackhole {
                         .get_mut(&cooling_scn)
                         .unwrap()
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             20,
                             cooling_gradient_fg.as_ref(),
                             cooling_gradient_bg.as_ref(),
@@ -517,9 +502,9 @@ impl Blackhole {
                         .map_err(EngineError::Other)?;
                 }
             } else {
-                let final_color = self.character_final_color_map.get(&id).unwrap().clone();
+                let final_color = *self.character_final_color_map.get(&id).unwrap();
                 let cooling_gradient =
-                    Gradient::with_steps(&[explode_star_color.clone(), final_color], 10, false)
+                    Gradient::with_steps(&[explode_star_color, final_color], 10, false)
                         .map_err(EngineError::Other)?;
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
@@ -527,7 +512,7 @@ impl Blackhole {
                     .get_mut(&cooling_scn)
                     .unwrap()
                     .apply_gradient_to_symbols(
-                        &[input_symbol.clone()],
+                        std::slice::from_ref(&input_symbol),
                         20,
                         Some(&cooling_gradient),
                         None,
@@ -599,10 +584,8 @@ impl Effect for Blackhole {
         };
         for &id in &characters {
             let input_coord = ctx.terminal.arena[id.0 as usize].input_coord;
-            self.character_final_color_map.insert(
-                id,
-                final_gradient_mapping.get(&input_coord).unwrap().clone(),
-            );
+            self.character_final_color_map
+                .insert(id, *final_gradient_mapping.get(&input_coord).unwrap());
         }
         self.prepare_blackhole(ctx)?;
         self.formation_delay = std::cmp::max(floor_div(100, self.blackhole_chars.len() as i64), 6);

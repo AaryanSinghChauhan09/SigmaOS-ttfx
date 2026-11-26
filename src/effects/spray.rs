@@ -144,13 +144,10 @@ impl Effect for Spray {
             let final_colors = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 if dynamic {
-                    ColorPair::new(
-                        ch.animation.input_fg_color.clone(),
-                        ch.animation.input_bg_color.clone(),
-                    )
+                    ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
                 } else {
                     ColorPair::new(
-                        Some(final_gradient_mapping.get(&ch.input_coord).unwrap().clone()),
+                        Some(*final_gradient_mapping.get(&ch.input_coord).unwrap()),
                         None,
                     )
                 }
@@ -218,7 +215,7 @@ impl Effect for Spray {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation.new_scene(false, None, None, "", uses_pre)
             };
-            let final_colors = self.character_final_color_map.get(&id).unwrap().clone();
+            let final_colors = *self.character_final_color_map.get(&id).unwrap();
             if dynamic {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 let scene = ch.animation.scenes.get_mut(&droplet_scn).unwrap();
@@ -228,15 +225,15 @@ impl Effect for Spray {
                             &input_symbol,
                             20,
                             VisualParams {
-                                colors: Some(final_colors.clone()),
+                                colors: Some(final_colors),
                                 ..Default::default()
                             },
                         )
                         .map_err(EngineError::Other)?;
                 }
             } else {
-                let start_color = ctx.rng.choice(&final_gradient.spectrum).clone();
-                let final_fg = final_colors.fg_color.clone().expect("gradient mapping fg");
+                let start_color = *ctx.rng.choice(&final_gradient.spectrum);
+                let final_fg = final_colors.fg_color.expect("gradient mapping fg");
                 let spray_gradient = Gradient::with_steps(&[start_color, final_fg], 7, false)
                     .map_err(EngineError::Other)?;
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
@@ -245,7 +242,7 @@ impl Effect for Spray {
                     .get_mut(&droplet_scn)
                     .unwrap()
                     .apply_gradient_to_symbols(
-                        &[input_symbol.clone()],
+                        std::slice::from_ref(&input_symbol),
                         20,
                         Some(&spray_gradient),
                         None,

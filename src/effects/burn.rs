@@ -133,7 +133,7 @@ impl Burn {
                     &input_symbol,
                     10,
                     VisualParams {
-                        colors: Some(ColorPair::new(Some(color.clone()), None)),
+                        colors: Some(ColorPair::new(Some(*color), None)),
                         ..Default::default()
                     },
                 )
@@ -272,10 +272,9 @@ impl Effect for Burn {
             let coord = ctx.terminal.arena[id.0 as usize].input_coord;
             self.character_final_color_map.insert(
                 id,
-                final_gradient_mapping
+                *final_gradient_mapping
                     .get(&coord)
-                    .expect("gradient mapping")
-                    .clone(),
+                    .expect("gradient mapping"),
             );
         }
         let fire_gradient = Gradient::with_steps(&self.config.burn_colors, 10, false)
@@ -297,8 +296,8 @@ impl Effect for Burn {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
                     ch.input_symbol.clone(),
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.uses_input_preexisting_colors,
                 )
             };
@@ -308,10 +307,7 @@ impl Effect for Burn {
                     &input_symbol,
                     uses_pre,
                     Some(&input_symbol),
-                    Some(ColorPair::new(
-                        Some(self.config.starting_color.clone()),
-                        None,
-                    )),
+                    Some(ColorPair::new(Some(self.config.starting_color), None)),
                 );
             }
             let burn_scn = {
@@ -329,22 +325,21 @@ impl Effect for Burn {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation.new_scene(false, None, None, "", uses_pre)
             };
-            let fire_last = fire_gradient
+            let fire_last = *fire_gradient
                 .spectrum
                 .last()
-                .expect("fire gradient spectrum")
-                .clone();
+                .expect("fire gradient spectrum");
             if dynamic {
                 let fg_gradient = match &input_fg {
                     Some(fg) => Some(
-                        Gradient::with_steps(&[fire_last.clone(), fg.clone()], 8, false)
+                        Gradient::with_steps(&[fire_last, *fg], 8, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
                 let bg_gradient = match &input_bg {
                     Some(bg) => Some(
-                        Gradient::with_steps(&[fire_last.clone(), bg.clone()], 8, false)
+                        Gradient::with_steps(&[fire_last, *bg], 8, false)
                             .map_err(EngineError::Other)?,
                     ),
                     None => None,
@@ -354,7 +349,7 @@ impl Effect for Burn {
                 if fg_gradient.is_some() || bg_gradient.is_some() {
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             4,
                             fg_gradient.as_ref(),
                             bg_gradient.as_ref(),
@@ -373,7 +368,7 @@ impl Effect for Burn {
                         .map_err(EngineError::Other)?;
                 }
             } else {
-                let final_color = self.character_final_color_map.get(&id).unwrap().clone();
+                let final_color = *self.character_final_color_map.get(&id).unwrap();
                 let char_gradient = Gradient::with_steps(&[fire_last, final_color], 8, false)
                     .map_err(EngineError::Other)?;
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
@@ -384,7 +379,7 @@ impl Effect for Burn {
                             &input_symbol,
                             4,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(*color), None)),
                                 ..Default::default()
                             },
                         )

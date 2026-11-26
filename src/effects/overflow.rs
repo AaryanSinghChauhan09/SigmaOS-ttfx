@@ -83,7 +83,7 @@ impl Row {
                 &ch.input_symbol,
                 uses_pre,
                 None,
-                Some(ColorPair::new(fg_color.clone(), bg_color.clone())),
+                Some(ColorPair::new(fg_color, bg_color)),
             );
         }
     }
@@ -186,8 +186,8 @@ impl Effect for Overflow {
                                 ch.input_ansi_bg_sequence.clone(),
                                 ch.animation.no_color,
                                 ch.animation.use_xterm_colors,
-                                ch.animation.input_fg_color.clone(),
-                                ch.animation.input_bg_color.clone(),
+                                ch.animation.input_fg_color,
+                                ch.animation.input_bg_color,
                             )
                         };
                         let copy_id = ctx.terminal.add_character(&symbol, coord);
@@ -222,8 +222,8 @@ impl Effect for Overflow {
                 let input_symbol = ch.input_symbol.clone();
                 let uses_pre = ch.uses_input_preexisting_colors;
                 if dynamic {
-                    let input_fg = ch.animation.input_fg_color.clone();
-                    let input_bg = ch.animation.input_bg_color.clone();
+                    let input_fg = ch.animation.input_fg_color;
+                    let input_bg = ch.animation.input_bg_color;
                     if input_fg.is_some() || input_bg.is_some() {
                         ch.animation.set_appearance(
                             &input_symbol,
@@ -240,7 +240,7 @@ impl Effect for Overflow {
                         );
                     }
                 } else {
-                    let final_color = self.character_final_color_map.get(&id).unwrap().clone();
+                    let final_color = *self.character_final_color_map.get(&id).unwrap();
                     ch.animation.set_appearance(
                         &input_symbol,
                         uses_pre,
@@ -284,14 +284,14 @@ impl Effect for Overflow {
                                     .row;
                                 let index =
                                     std::cmp::min(head_row, spectrum.len() as i64 - 1) as usize;
-                                row.set_color(ctx, Some(spectrum[index].clone()), None);
+                                row.set_color(ctx, Some(spectrum[index]), None);
                             }
                         }
                         let next_row = self.pending_rows.pop_front().unwrap();
                         next_row.setup(ctx);
                         next_row.move_up(ctx);
                         if !next_row.final_ {
-                            next_row.set_color(ctx, Some(spectrum[0].clone()), None);
+                            next_row.set_color(ctx, Some(spectrum[0]), None);
                         }
                         for &id in &next_row.characters {
                             ctx.terminal.set_character_visibility(id, true);

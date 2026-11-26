@@ -155,13 +155,10 @@ impl Effect for BinaryPath {
         for &id in &characters {
             let ch = &ctx.terminal.arena[id.0 as usize];
             let final_colors = if dynamic {
-                ColorPair::new(
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
-                )
+                ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&ch.input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&ch.input_coord).unwrap()),
                     None,
                 )
             };
@@ -268,7 +265,7 @@ impl Effect for BinaryPath {
                 };
                 ctx.activate_path(self, bin_effectchar, &digital_path);
                 ctx.terminal.arena[bin_effectchar.0 as usize].layer = 1;
-                let color = ctx.rng.choice(&self.config.binary_colors).clone();
+                let color = *ctx.rng.choice(&self.config.binary_colors);
                 let color_scn = {
                     let ch = &mut ctx.terminal.arena[bin_effectchar.0 as usize];
                     let symbol = ch.animation.current_character_visual.symbol.clone();
@@ -292,16 +289,16 @@ impl Effect for BinaryPath {
                 ctx.activate_scene(self, bin_effectchar, &color_scn);
             }
         }
-        self.pending_binary_representations = pending_reps.drain(..).collect();
+        self.pending_binary_representations = std::mem::take(&mut pending_reps);
 
         for &id in &characters {
             let (input_symbol, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (ch.input_symbol.clone(), ch.uses_input_preexisting_colors)
             };
-            let final_colors = self.character_final_color_map.get(&id).unwrap().clone();
-            let final_fg_color = final_colors.fg_color.clone();
-            let final_bg_color = final_colors.bg_color.clone();
+            let final_colors = *self.character_final_color_map.get(&id).unwrap();
+            let final_fg_color = final_colors.fg_color;
+            let final_bg_color = final_colors.bg_color;
             let dim_fg_color = final_fg_color
                 .as_ref()
                 .map(|c| Animation::adjust_color_brightness(c, 0.5));
@@ -310,23 +307,15 @@ impl Effect for BinaryPath {
                 .map(|c| Animation::adjust_color_brightness(c, 0.5));
             let collapse_fg_gradient = match &dim_fg_color {
                 Some(dim) => Some(
-                    Gradient::with_steps(
-                        &[Color::from_hex("ffffff").unwrap(), dim.clone()],
-                        7,
-                        false,
-                    )
-                    .map_err(EngineError::Other)?,
+                    Gradient::with_steps(&[Color::from_hex("ffffff").unwrap(), *dim], 7, false)
+                        .map_err(EngineError::Other)?,
                 ),
                 None => None,
             };
             let collapse_bg_gradient = match &dim_bg_color {
                 Some(dim) => Some(
-                    Gradient::with_steps(
-                        &[Color::from_hex("ffffff").unwrap(), dim.clone()],
-                        7,
-                        false,
-                    )
-                    .map_err(EngineError::Other)?,
+                    Gradient::with_steps(&[Color::from_hex("ffffff").unwrap(), *dim], 7, false)
+                        .map_err(EngineError::Other)?,
                 ),
                 None => None,
             };
@@ -343,7 +332,7 @@ impl Effect for BinaryPath {
                 if collapse_fg_gradient.is_some() || collapse_bg_gradient.is_some() {
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             3,
                             collapse_fg_gradient.as_ref(),
                             collapse_bg_gradient.as_ref(),
@@ -365,14 +354,14 @@ impl Effect for BinaryPath {
 
             let brighten_fg_gradient = match (&dim_fg_color, &final_fg_color) {
                 (Some(dim), Some(final_fg)) => Some(
-                    Gradient::with_steps(&[dim.clone(), final_fg.clone()], 10, false)
+                    Gradient::with_steps(&[*dim, *final_fg], 10, false)
                         .map_err(EngineError::Other)?,
                 ),
                 _ => None,
             };
             let brighten_bg_gradient = match (&dim_bg_color, &final_bg_color) {
                 (Some(dim), Some(final_bg)) => Some(
-                    Gradient::with_steps(&[dim.clone(), final_bg.clone()], 10, false)
+                    Gradient::with_steps(&[*dim, *final_bg], 10, false)
                         .map_err(EngineError::Other)?,
                 ),
                 _ => None,
@@ -386,7 +375,7 @@ impl Effect for BinaryPath {
                 if brighten_fg_gradient.is_some() || brighten_bg_gradient.is_some() {
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             2,
                             brighten_fg_gradient.as_ref(),
                             brighten_bg_gradient.as_ref(),

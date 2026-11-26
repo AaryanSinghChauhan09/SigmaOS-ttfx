@@ -145,8 +145,8 @@ impl Effect for Middleout {
             let (input_fg, input_bg, input_coord, input_symbol, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                     ch.input_symbol.clone(),
                     ch.uses_input_preexisting_colors,
@@ -156,12 +156,11 @@ impl Effect for Middleout {
                 ColorPair::new(input_fg, input_bg)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 )
             };
-            self.character_final_color_map
-                .insert(id, final_colors.clone());
+            self.character_final_color_map.insert(id, final_colors);
             let center = ctx.terminal.canvas.center;
             ctx.terminal.arena[id.0 as usize]
                 .motion
@@ -216,35 +215,27 @@ impl Effect for Middleout {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation.new_scene(false, None, None, "full", uses_pre);
                 let scene = ch.animation.scenes.get_mut("full").unwrap();
-                let final_fg_color = final_colors.fg_color.clone();
-                let final_bg_color = final_colors.bg_color.clone();
+                let final_fg_color = final_colors.fg_color;
+                let final_bg_color = final_colors.bg_color;
                 if dynamic {
                     let fg_gradient = match &final_fg_color {
                         Some(c) => Some(
-                            Gradient::with_steps(
-                                &[self.config.starting_color.clone(), c.clone()],
-                                10,
-                                false,
-                            )
-                            .map_err(EngineError::Other)?,
+                            Gradient::with_steps(&[self.config.starting_color, *c], 10, false)
+                                .map_err(EngineError::Other)?,
                         ),
                         None => None,
                     };
                     let bg_gradient = match &final_bg_color {
                         Some(c) => Some(
-                            Gradient::with_steps(
-                                &[self.config.starting_color.clone(), c.clone()],
-                                10,
-                                false,
-                            )
-                            .map_err(EngineError::Other)?,
+                            Gradient::with_steps(&[self.config.starting_color, *c], 10, false)
+                                .map_err(EngineError::Other)?,
                         ),
                         None => None,
                     };
                     if fg_gradient.is_some() || bg_gradient.is_some() {
                         scene
                             .apply_gradient_to_symbols(
-                                &[input_symbol.clone()],
+                                std::slice::from_ref(&input_symbol),
                                 6,
                                 fg_gradient.as_ref(),
                                 bg_gradient.as_ref(),
@@ -265,14 +256,14 @@ impl Effect for Middleout {
                 } else {
                     let final_fg_color = final_fg_color.expect("gradient mapping fg");
                     let full_gradient = Gradient::with_steps(
-                        &[self.config.starting_color.clone(), final_fg_color],
+                        &[self.config.starting_color, final_fg_color],
                         10,
                         false,
                     )
                     .map_err(EngineError::Other)?;
                     scene
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             6,
                             Some(&full_gradient),
                             None,
@@ -291,10 +282,7 @@ impl Effect for Middleout {
                     &input_symbol,
                     uses_pre,
                     Some(&input_symbol.clone()),
-                    Some(ColorPair::new(
-                        Some(self.config.starting_color.clone()),
-                        None,
-                    )),
+                    Some(ColorPair::new(Some(self.config.starting_color), None)),
                 );
             }
             ctx.terminal.set_character_visibility(id, true);

@@ -135,7 +135,7 @@ fn initialize_spark(
                 &input_symbol,
                 cooling_frames,
                 VisualParams {
-                    colors: Some(ColorPair::new(Some(color.clone()), None)),
+                    colors: Some(ColorPair::new(Some(*color), None)),
                     ..Default::default()
                 },
             )
@@ -231,7 +231,7 @@ impl LaserEtch {
                             &input_symbol,
                             3,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(*color), None)),
                                 ..Default::default()
                             },
                         )
@@ -256,14 +256,10 @@ impl LaserEtch {
     fn laser_reposition(&mut self, ctx: &mut EngineCtx, target: Coord) {
         let mut laser = self.laser.take().expect("laser missing");
         laser.position = target;
-        let mut row = target.row;
-        let mut col = target.column;
-        for &char_id in &laser.beam_chars {
+        for (i, &char_id) in laser.beam_chars.iter().enumerate() {
             ctx.terminal.arena[char_id.0 as usize]
                 .motion
-                .set_coordinate(Coord::new(col, row));
-            row += 1;
-            col += 1;
+                .set_coordinate(Coord::new(target.column + i as i64, target.row + i as i64));
         }
         self.laser_emit_sparks(ctx, &mut laser, 1);
         self.laser = Some(laser);
@@ -374,28 +370,28 @@ impl Effect for LaserEtch {
                 (
                     ch.input_coord,
                     ch.input_symbol.clone(),
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.uses_input_preexisting_colors,
                 )
             };
             let (final_fg_color, final_bg_color, cool_gradient) = if dynamic {
                 let pair = ColorPair::new(input_fg, input_bg);
-                self.character_final_color_map.insert(id, pair.clone());
+                self.character_final_color_map.insert(id, pair);
                 let cool = Gradient::with_steps(&self.config.cool_gradient_stops, 8, false)
                     .map_err(EngineError::Other)?;
                 (pair.fg_color, pair.bg_color, cool)
             } else {
-                let mapped = final_gradient_mapping.get(&input_coord).unwrap().clone();
-                let pair = ColorPair::new(Some(mapped.clone()), None);
-                self.character_final_color_map.insert(id, pair.clone());
+                let mapped = *final_gradient_mapping.get(&input_coord).unwrap();
+                let pair = ColorPair::new(Some(mapped), None);
+                self.character_final_color_map.insert(id, pair);
                 let mut stops = self.config.cool_gradient_stops.clone();
                 stops.push(mapped);
                 let cool = Gradient::with_steps(&stops, 8, false).map_err(EngineError::Other)?;
                 (pair.fg_color, pair.bg_color, cool)
             };
             // gradients for the dynamic tail, built before borrowing the scene
-            let cool_last = cool_gradient.spectrum.last().unwrap().clone();
+            let cool_last = *cool_gradient.spectrum.last().unwrap();
             let mut fg_gradient: Option<Gradient> = None;
             let mut bg_gradient: Option<Gradient> = None;
             let mut white_cooldown: Option<Gradient> = None;
@@ -403,20 +399,20 @@ impl Effect for LaserEtch {
                 if final_fg_color.is_some() || final_bg_color.is_some() {
                     if let Some(fg) = &final_fg_color {
                         fg_gradient = Some(
-                            Gradient::with_steps(&[cool_last.clone(), fg.clone()], 8, false)
+                            Gradient::with_steps(&[cool_last, *fg], 8, false)
                                 .map_err(EngineError::Other)?,
                         );
                     }
                     if let Some(bg) = &final_bg_color {
                         bg_gradient = Some(
-                            Gradient::with_steps(&[cool_last.clone(), bg.clone()], 8, false)
+                            Gradient::with_steps(&[cool_last, *bg], 8, false)
                                 .map_err(EngineError::Other)?,
                         );
                     }
                 } else {
                     white_cooldown = Some(
                         Gradient::with_steps(
-                            &[cool_last.clone(), Color::from_hex("ffffff").unwrap()],
+                            &[cool_last, Color::from_hex("ffffff").unwrap()],
                             8,
                             false,
                         )
@@ -447,7 +443,7 @@ impl Effect for LaserEtch {
                             &input_symbol,
                             3,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(*color), None)),
                                 ..Default::default()
                             },
                         )
@@ -457,7 +453,7 @@ impl Effect for LaserEtch {
                     if final_fg_color.is_some() || final_bg_color.is_some() {
                         scene
                             .apply_gradient_to_symbols(
-                                &[input_symbol.clone()],
+                                std::slice::from_ref(&input_symbol),
                                 3,
                                 fg_gradient.as_ref(),
                                 bg_gradient.as_ref(),
@@ -466,7 +462,7 @@ impl Effect for LaserEtch {
                     } else {
                         scene
                             .apply_gradient_to_symbols(
-                                &[input_symbol.clone()],
+                                std::slice::from_ref(&input_symbol),
                                 3,
                                 white_cooldown.as_ref(),
                                 None,

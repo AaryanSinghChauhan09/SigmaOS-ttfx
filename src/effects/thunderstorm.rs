@@ -150,59 +150,34 @@ fn add_color_pair_gradient_frames(
     steps: i64,
     duration: i64,
 ) -> Result<(), String> {
-    let fg_steps: Vec<Option<Color>> =
-        if start_colors.fg_color.is_some() && end_colors.fg_color.is_some() {
-            Gradient::with_steps(
-                &[
-                    start_colors.fg_color.clone().unwrap(),
-                    end_colors.fg_color.clone().unwrap(),
-                ],
-                steps,
-                false,
-            )?
+    let fg_steps: Vec<Option<Color>> = match (start_colors.fg_color, end_colors.fg_color) {
+        (Some(start), Some(end)) => Gradient::with_steps(&[start, end], steps, false)?
             .spectrum
             .into_iter()
             .map(Some)
-            .collect()
-        } else {
-            let filler = if end_colors.fg_color.is_some() {
-                end_colors.fg_color.clone()
-            } else {
-                start_colors.fg_color.clone()
-            };
+            .collect(),
+        _ => {
+            let filler = end_colors.fg_color.or(start_colors.fg_color);
             vec![filler; steps as usize]
-        };
-    let bg_steps: Vec<Option<Color>> =
-        if start_colors.bg_color.is_some() && end_colors.bg_color.is_some() {
-            Gradient::with_steps(
-                &[
-                    start_colors.bg_color.clone().unwrap(),
-                    end_colors.bg_color.clone().unwrap(),
-                ],
-                steps,
-                false,
-            )?
+        }
+    };
+    let bg_steps: Vec<Option<Color>> = match (start_colors.bg_color, end_colors.bg_color) {
+        (Some(start), Some(end)) => Gradient::with_steps(&[start, end], steps, false)?
             .spectrum
             .into_iter()
             .map(Some)
-            .collect()
-        } else {
-            let filler = if end_colors.bg_color.is_some() {
-                end_colors.bg_color.clone()
-            } else {
-                start_colors.bg_color.clone()
-            };
+            .collect(),
+        _ => {
+            let filler = end_colors.bg_color.or(start_colors.bg_color);
             vec![filler; steps as usize]
-        };
+        }
+    };
     for index in 0..steps as usize {
         scene.add_frame(
             symbol,
             duration,
             VisualParams {
-                colors: Some(ColorPair::new(
-                    fg_steps[index].clone(),
-                    bg_steps[index].clone(),
-                )),
+                colors: Some(ColorPair::new(fg_steps[index], bg_steps[index])),
                 ..Default::default()
             },
         )?;
@@ -248,7 +223,7 @@ fn initialize_spark(
                 &input_symbol,
                 spark_glow_time,
                 VisualParams {
-                    colors: Some(ColorPair::new(Some(color.clone()), None)),
+                    colors: Some(ColorPair::new(Some(*color), None)),
                     ..Default::default()
                 },
             )
@@ -434,10 +409,7 @@ impl Thunderstorm {
                     &input_symbol,
                     uses_pre,
                     Some(symbol),
-                    Some(ColorPair::new(
-                        Some(self.config.lightning_color.clone()),
-                        None,
-                    )),
+                    Some(ColorPair::new(Some(self.config.lightning_color), None)),
                 );
             }
             row -= 1;
@@ -461,15 +433,15 @@ impl Thunderstorm {
     /// ThunderstormIterator.lightning_strike.
     fn lightning_strike(&mut self, ctx: &mut EngineCtx) {
         self.setup_lightning_strike(ctx, None);
-        let strike_base_color = self.config.lightning_color.clone();
+        let strike_base_color = self.config.lightning_color;
         let strike_flash_color = Animation::adjust_color_brightness(&strike_base_color, 1.7);
         let strike_gradient =
-            Gradient::with_steps(&[strike_base_color.clone(), strike_flash_color], 7, true)
+            Gradient::with_steps(&[strike_base_color, strike_flash_color], 7, true)
                 .expect("strike gradient failed");
         let fade_gradient = Gradient::with_steps(
             &[
                 strike_base_color,
-                ctx.terminal.config.terminal_background_color.clone(),
+                ctx.terminal.config.terminal_background_color,
             ],
             6,
             false,
@@ -496,7 +468,7 @@ impl Thunderstorm {
                             &symbol,
                             6,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(*color), None)),
                                 ..Default::default()
                             },
                         )
@@ -510,7 +482,7 @@ impl Thunderstorm {
                             &symbol,
                             2,
                             VisualParams {
-                                colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                colors: Some(ColorPair::new(Some(*color), None)),
                                 ..Default::default()
                             },
                         )
@@ -750,8 +722,8 @@ impl Effect for Thunderstorm {
             .map_err(EngineError::Other)?;
         self.spark_gradient = Gradient::with_steps(
             &[
-                self.config.spark_glow_color.clone(),
-                ctx.terminal.config.terminal_background_color.clone(),
+                self.config.spark_glow_color,
+                ctx.terminal.config.terminal_background_color,
             ],
             7,
             false,
@@ -802,27 +774,21 @@ impl Effect for Thunderstorm {
                     ch.input_symbol.clone(),
                     ch.input_coord,
                     ch.uses_input_preexisting_colors,
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                 )
             };
             let (visible_colors, restore_colors) = if dynamic {
-                let visible = ColorPair::new(
-                    Some(
-                        input_fg
-                            .clone()
-                            .unwrap_or_else(|| dynamic_neutral_gray.clone()),
-                    ),
-                    input_bg.clone(),
-                );
-                let restore = ColorPair::new(input_fg.clone(), input_bg.clone());
+                let visible =
+                    ColorPair::new(Some(input_fg.unwrap_or(dynamic_neutral_gray)), input_bg);
+                let restore = ColorPair::new(input_fg, input_bg);
                 (visible, restore)
             } else {
                 let visible = ColorPair::new(
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 );
-                (visible.clone(), visible)
+                (visible, visible)
             };
             let storm_colors = adjust_color_pair_brightness(&visible_colors, 0.5);
             // upstream stores visible/storm/restore in three maps that are
@@ -831,8 +797,8 @@ impl Effect for Thunderstorm {
             // post-strike glow and cool scene
             let glow_fg_gradient = Gradient::with_steps(
                 &[
-                    self.config.glowing_text_color.clone(),
-                    storm_colors.fg_color.clone().expect("storm fg"),
+                    self.config.glowing_text_color,
+                    storm_colors.fg_color.expect("storm fg"),
                 ],
                 7,
                 false,
@@ -848,10 +814,7 @@ impl Effect for Thunderstorm {
                             &input_symbol,
                             self.config.text_glow_time,
                             VisualParams {
-                                colors: Some(ColorPair::new(
-                                    Some(color.clone()),
-                                    storm_colors.bg_color.clone(),
-                                )),
+                                colors: Some(ColorPair::new(Some(*color), storm_colors.bg_color)),
                                 ..Default::default()
                             },
                         )
@@ -863,7 +826,7 @@ impl Effect for Thunderstorm {
                             &input_symbol,
                             self.config.text_glow_time,
                             VisualParams {
-                                colors: Some(storm_colors.clone()),
+                                colors: Some(storm_colors),
                                 ..Default::default()
                             },
                         )
@@ -891,7 +854,7 @@ impl Effect for Thunderstorm {
                             &input_symbol,
                             12,
                             VisualParams {
-                                colors: Some(storm_colors.clone()),
+                                colors: Some(storm_colors),
                                 ..Default::default()
                             },
                         )
@@ -899,8 +862,8 @@ impl Effect for Thunderstorm {
                 } else {
                     let fade_gradient = Gradient::with_steps(
                         &[
-                            visible_colors.fg_color.clone().expect("visible fg"),
-                            storm_colors.fg_color.clone().expect("storm fg"),
+                            visible_colors.fg_color.expect("visible fg"),
+                            storm_colors.fg_color.expect("storm fg"),
                         ],
                         7,
                         false,
@@ -913,7 +876,7 @@ impl Effect for Thunderstorm {
                                 &input_symbol,
                                 12,
                                 VisualParams {
-                                    colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                    colors: Some(ColorPair::new(Some(*color), None)),
                                     ..Default::default()
                                 },
                             )
@@ -944,7 +907,7 @@ impl Effect for Thunderstorm {
                             &input_symbol,
                             12,
                             VisualParams {
-                                colors: Some(visible_colors.clone()),
+                                colors: Some(visible_colors),
                                 ..Default::default()
                             },
                         )
@@ -955,7 +918,7 @@ impl Effect for Thunderstorm {
                                 &input_symbol,
                                 12,
                                 VisualParams {
-                                    colors: Some(restore_colors.clone()),
+                                    colors: Some(restore_colors),
                                     ..Default::default()
                                 },
                             )
@@ -964,8 +927,8 @@ impl Effect for Thunderstorm {
                 } else {
                     let unfade_gradient: Vec<Color> = Gradient::with_steps(
                         &[
-                            visible_colors.fg_color.clone().expect("visible fg"),
-                            storm_colors.fg_color.clone().expect("storm fg"),
+                            visible_colors.fg_color.expect("visible fg"),
+                            storm_colors.fg_color.expect("storm fg"),
                         ],
                         7,
                         false,
@@ -982,7 +945,7 @@ impl Effect for Thunderstorm {
                                 &input_symbol,
                                 12,
                                 VisualParams {
-                                    colors: Some(ColorPair::new(Some(color.clone()), None)),
+                                    colors: Some(ColorPair::new(Some(*color), None)),
                                     ..Default::default()
                                 },
                             )
@@ -998,7 +961,7 @@ impl Effect for Thunderstorm {
             );
             let flash_gradient = Gradient::with_steps(
                 &[
-                    storm_colors.fg_color.clone().expect("storm fg"),
+                    storm_colors.fg_color.expect("storm fg"),
                     lightning_flash_color,
                 ],
                 7,
@@ -1015,10 +978,7 @@ impl Effect for Thunderstorm {
                             &input_symbol,
                             6,
                             VisualParams {
-                                colors: Some(ColorPair::new(
-                                    Some(color.clone()),
-                                    storm_colors.bg_color.clone(),
-                                )),
+                                colors: Some(ColorPair::new(Some(*color), storm_colors.bg_color)),
                                 ..Default::default()
                             },
                         )

@@ -144,8 +144,8 @@ impl Effect for Slide {
             let (input_fg, input_bg, input_coord) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 (
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
+                    ch.animation.input_fg_color,
+                    ch.animation.input_bg_color,
                     ch.input_coord,
                 )
             };
@@ -153,7 +153,7 @@ impl Effect for Slide {
                 ColorPair::new(input_fg, input_bg)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&input_coord).unwrap()),
                     None,
                 )
             };
@@ -191,26 +191,24 @@ impl Effect for Slide {
             }
         }
 
-        for group_index in 0..groups.len() {
+        for (group_index, group_vec) in groups.iter_mut().enumerate() {
             // Python's loop variable `group` keeps the original (pre-reversal) list.
-            let group = groups[group_index].clone();
+            let group = group_vec.clone();
             match self.config.grouping {
                 SlideGrouping::Row => {
-                    let starting_column;
-                    if self.config.merge && group_index % 2 == 0 {
-                        starting_column = ctx.terminal.canvas.right + 1;
+                    let starting_column = if self.config.merge && group_index % 2 == 0 {
+                        ctx.terminal.canvas.right + 1
                     } else {
-                        groups[group_index].reverse();
-                        starting_column = ctx.terminal.canvas.left - 1;
-                    }
+                        group_vec.reverse();
+                        ctx.terminal.canvas.left - 1
+                    };
                     let starting_column = if self.config.reverse_direction && !self.config.merge {
-                        groups[group_index].reverse();
+                        group_vec.reverse();
                         ctx.terminal.canvas.right + 1
                     } else {
                         starting_column
                     };
-                    for i in 0..groups[group_index].len() {
-                        let id = groups[group_index][i];
+                    for &id in group_vec.iter() {
                         let row = ctx.terminal.arena[id.0 as usize].input_coord.row;
                         ctx.terminal.arena[id.0 as usize]
                             .motion
@@ -218,21 +216,19 @@ impl Effect for Slide {
                     }
                 }
                 SlideGrouping::Column => {
-                    let starting_row;
-                    if self.config.merge && group_index % 2 == 0 {
-                        starting_row = ctx.terminal.canvas.bottom - 1;
+                    let starting_row = if self.config.merge && group_index % 2 == 0 {
+                        ctx.terminal.canvas.bottom - 1
                     } else {
-                        groups[group_index].reverse();
-                        starting_row = ctx.terminal.canvas.top + 1;
-                    }
+                        group_vec.reverse();
+                        ctx.terminal.canvas.top + 1
+                    };
                     let starting_row = if self.config.reverse_direction && !self.config.merge {
-                        groups[group_index].reverse();
+                        group_vec.reverse();
                         ctx.terminal.canvas.bottom - 1
                     } else {
                         starting_row
                     };
-                    for i in 0..groups[group_index].len() {
-                        let id = groups[group_index][i];
+                    for &id in group_vec.iter() {
                         let column = ctx.terminal.arena[id.0 as usize].input_coord.column;
                         ctx.terminal.arena[id.0 as usize]
                             .motion
@@ -250,7 +246,7 @@ impl Effect for Slide {
                     last_coord.row - distance_from_outside_bottom,
                 );
                 if self.config.merge && group_index % 2 == 0 {
-                    groups[group_index].reverse();
+                    group_vec.reverse();
                     let first_coord = ctx.terminal.arena[group[0].0 as usize].input_coord;
                     let distance_from_outside = (ctx.terminal.canvas.top + 1) - first_coord.row;
                     starting_coord = Coord::new(
@@ -259,7 +255,7 @@ impl Effect for Slide {
                     );
                 }
                 if self.config.reverse_direction && !self.config.merge {
-                    groups[group_index].reverse();
+                    group_vec.reverse();
                     let first_coord = ctx.terminal.arena[group[0].0 as usize].input_coord;
                     let distance_from_outside = (ctx.terminal.canvas.top + 1) - first_coord.row;
                     starting_coord = Coord::new(
@@ -267,8 +263,7 @@ impl Effect for Slide {
                         first_coord.row + distance_from_outside,
                     );
                 }
-                for i in 0..groups[group_index].len() {
-                    let id = groups[group_index][i];
+                for &id in group_vec.iter() {
                     ctx.terminal.arena[id.0 as usize]
                         .motion
                         .set_coordinate(starting_coord);
@@ -279,7 +274,7 @@ impl Effect for Slide {
                     let ch = &ctx.terminal.arena[id.0 as usize];
                     (ch.input_symbol.clone(), ch.uses_input_preexisting_colors)
                 };
-                let final_colors = self.character_final_color_map.get(&id).unwrap().clone();
+                let final_colors = *self.character_final_color_map.get(&id).unwrap();
                 let gradient_scn = {
                     let ch = &mut ctx.terminal.arena[id.0 as usize];
                     ch.animation.new_scene(false, None, None, "", uses_pre)
@@ -299,17 +294,16 @@ impl Effect for Slide {
                             )
                             .map_err(EngineError::Other)?;
                     } else {
-                        let final_fg_color =
-                            final_colors.fg_color.clone().expect("gradient mapping fg");
+                        let final_fg_color = final_colors.fg_color.expect("gradient mapping fg");
                         let char_gradient = Gradient::with_steps(
-                            &[self.config.final_gradient_stops[0].clone(), final_fg_color],
+                            &[self.config.final_gradient_stops[0], final_fg_color],
                             10,
                             false,
                         )
                         .map_err(EngineError::Other)?;
                         scene
                             .apply_gradient_to_symbols(
-                                &[input_symbol.clone()],
+                                std::slice::from_ref(&input_symbol),
                                 self.config.final_gradient_frames,
                                 Some(&char_gradient),
                                 None,

@@ -115,7 +115,7 @@ impl Fenwick {
     fn new(n: usize) -> Self {
         let mut tree = vec![0u32; n + 1];
         for (i, t) in tree.iter_mut().enumerate().skip(1) {
-            *t = (i & i.wrapping_neg()) as u32;
+            *t = i.isolate_lowest_one() as u32;
         }
         let top = if n == 0 {
             0
@@ -142,7 +142,7 @@ impl Fenwick {
         let mut i = pos + 1;
         while i <= n {
             self.tree[i] -= 1;
-            i += i & i.wrapping_neg();
+            i += i.isolate_lowest_one();
         }
         pos
     }

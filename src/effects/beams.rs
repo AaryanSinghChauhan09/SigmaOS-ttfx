@@ -239,13 +239,10 @@ impl Effect for Beams {
                 continue;
             }
             let final_colors = if dynamic {
-                ColorPair::new(
-                    ch.animation.input_fg_color.clone(),
-                    ch.animation.input_bg_color.clone(),
-                )
+                ColorPair::new(ch.animation.input_fg_color, ch.animation.input_bg_color)
             } else {
                 ColorPair::new(
-                    Some(final_gradient_mapping.get(&ch.input_coord).unwrap().clone()),
+                    Some(*final_gradient_mapping.get(&ch.input_coord).unwrap()),
                     None,
                 )
             };
@@ -313,7 +310,7 @@ impl Effect for Beams {
                         )
                         .map_err(EngineError::Other)?;
                 }
-                let char_colors = self.character_final_color_map.get(&id).unwrap().clone();
+                let char_colors = *self.character_final_color_map.get(&id).unwrap();
                 let mut fg_fade_gradient: Option<Gradient> = None;
                 let mut bg_fade_gradient: Option<Gradient> = None;
                 let mut fg_brighten_gradient: Option<Gradient> = None;
@@ -321,22 +318,22 @@ impl Effect for Beams {
                 if let Some(fg) = &char_colors.fg_color {
                     let faded_fg_color = Animation::adjust_color_brightness(fg, 0.3);
                     fg_fade_gradient = Some(
-                        Gradient::with_steps(&[fg.clone(), faded_fg_color.clone()], 10, false)
+                        Gradient::with_steps(&[*fg, faded_fg_color], 10, false)
                             .map_err(EngineError::Other)?,
                     );
                     fg_brighten_gradient = Some(
-                        Gradient::with_steps(&[faded_fg_color, fg.clone()], 10, false)
+                        Gradient::with_steps(&[faded_fg_color, *fg], 10, false)
                             .map_err(EngineError::Other)?,
                     );
                 }
                 if let Some(bg) = &char_colors.bg_color {
                     let faded_bg_color = Animation::adjust_color_brightness(bg, 0.3);
                     bg_fade_gradient = Some(
-                        Gradient::with_steps(&[bg.clone(), faded_bg_color.clone()], 10, false)
+                        Gradient::with_steps(&[*bg, faded_bg_color], 10, false)
                             .map_err(EngineError::Other)?,
                     );
                     bg_brighten_gradient = Some(
-                        Gradient::with_steps(&[faded_bg_color, bg.clone()], 10, false)
+                        Gradient::with_steps(&[faded_bg_color, *bg], 10, false)
                             .map_err(EngineError::Other)?,
                     );
                 }
@@ -348,7 +345,7 @@ impl Effect for Beams {
                         .get_mut("beam_row")
                         .unwrap()
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             2,
                             fg_fade_gradient.as_ref(),
                             bg_fade_gradient.as_ref(),
@@ -359,7 +356,7 @@ impl Effect for Beams {
                         .get_mut("beam_column")
                         .unwrap()
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             2,
                             fg_fade_gradient.as_ref(),
                             bg_fade_gradient.as_ref(),
@@ -400,7 +397,7 @@ impl Effect for Beams {
                         .get_mut("brighten")
                         .unwrap()
                         .apply_gradient_to_symbols(
-                            &[input_symbol.clone()],
+                            std::slice::from_ref(&input_symbol),
                             self.config.final_gradient_frames,
                             fg_brighten_gradient.as_ref(),
                             bg_brighten_gradient.as_ref(),
