@@ -36,7 +36,9 @@ fn make_ctx() -> EngineCtx {
 fn chars(ctx: &mut EngineCtx, n: usize) -> Vec<CharId> {
     let filter = CharacterFilter::default();
     let mut rng = Rng::seeded(0); // sort is non-random; rng unused
-    ctx.terminal.get_characters(&mut rng, filter, CharacterSort::TopToBottomLeftToRight)[..n].to_vec()
+    ctx.terminal
+        .get_characters(&mut rng, filter, CharacterSort::TopToBottomLeftToRight)[..n]
+        .to_vec()
 }
 
 fn esc(s: &str) -> String {
@@ -57,7 +59,11 @@ fn snapshot(ctx: &mut EngineCtx, log: &mut Vec<String>, tick: i64, ids: &[CharId
             ch.motion.current_coord.column,
             ch.motion.current_coord.row,
             ch.layer,
-            esc(ch.animation.current_character_visual.formatted_symbol.as_str()),
+            esc(ch
+                .animation
+                .current_character_visual
+                .formatted_symbol
+                .as_str()),
         ));
     }
 }
@@ -69,8 +75,11 @@ fn run_ticks(ctx: &mut EngineCtx, log: &mut Vec<String>, ids: &[CharId], n: i64,
         for id in snapshot_ids {
             ctx.tick(&mut NoopHooks, id);
         }
-        let inactive: Vec<CharId> =
-            active.iter().copied().filter(|&id| !ctx.terminal.arena[id.0 as usize].is_active()).collect();
+        let inactive: Vec<CharId> = active
+            .iter()
+            .copied()
+            .filter(|&id| !ctx.terminal.arena[id.0 as usize].is_active())
+            .collect();
         for id in inactive {
             active.remove(&id);
         }
@@ -92,10 +101,18 @@ fn scenario_motion_basic(log: &mut Vec<String>) {
         motion.new_path(0.7, None, None, 0, false, "pa").unwrap();
         let pa = motion.paths.get_mut("pa").unwrap();
         pa.new_waypoint(Coord::new(15, 8), None, "").unwrap();
-        pa.new_waypoint(Coord::new(18, 2), Some(vec![Coord::new(1, 1)]), "").unwrap();
+        pa.new_waypoint(Coord::new(18, 2), Some(vec![Coord::new(1, 1)]), "")
+            .unwrap();
         let motion = &mut ctx.terminal.arena[b.0 as usize].motion;
-        motion.new_path(1.3, Some(Easing::OutBack), None, 0, false, "pb").unwrap();
-        motion.paths.get_mut("pb").unwrap().new_waypoint(Coord::new(3, 9), None, "").unwrap();
+        motion
+            .new_path(1.3, Some(Easing::OutBack), None, 0, false, "pb")
+            .unwrap();
+        motion
+            .paths
+            .get_mut("pb")
+            .unwrap()
+            .new_waypoint(Coord::new(3, 9), None, "")
+            .unwrap();
     }
     ctx.activate_path(&mut NoopHooks, a, "pa");
     ctx.activate_path(&mut NoopHooks, b, "pb");
@@ -111,7 +128,12 @@ fn scenario_hold_and_loop(log: &mut Vec<String>) {
     {
         let motion = &mut ctx.terminal.arena[a.0 as usize].motion;
         motion.new_path(2.0, None, None, 3, false, "hold").unwrap();
-        motion.paths.get_mut("hold").unwrap().new_waypoint(Coord::new(10, 5), None, "").unwrap();
+        motion
+            .paths
+            .get_mut("hold")
+            .unwrap()
+            .new_waypoint(Coord::new(10, 5), None, "")
+            .unwrap();
         let motion = &mut ctx.terminal.arena[b.0 as usize].motion;
         motion.new_path(2.0, None, None, 0, true, "looper").unwrap();
         let pb = motion.paths.get_mut("looper").unwrap();
@@ -132,13 +154,29 @@ fn scenario_chained_paths_and_events(log: &mut Vec<String>) {
     {
         let motion = &mut ctx.terminal.arena[a.0 as usize].motion;
         motion.new_path(1.5, None, None, 0, false, "p1").unwrap();
-        motion.paths.get_mut("p1").unwrap().new_waypoint(Coord::new(5, 5), None, "").unwrap();
+        motion
+            .paths
+            .get_mut("p1")
+            .unwrap()
+            .new_waypoint(Coord::new(5, 5), None, "")
+            .unwrap();
         motion.new_path(1.5, None, Some(2), 0, false, "p2").unwrap();
-        motion.paths.get_mut("p2").unwrap().new_waypoint(Coord::new(10, 2), None, "").unwrap();
+        motion
+            .paths
+            .get_mut("p2")
+            .unwrap()
+            .new_waypoint(Coord::new(10, 2), None, "")
+            .unwrap();
         motion.new_path(1.5, None, None, 0, false, "p3").unwrap();
-        motion.paths.get_mut("p3").unwrap().new_waypoint(Coord::new(1, 1), None, "").unwrap();
+        motion
+            .paths
+            .get_mut("p3")
+            .unwrap()
+            .new_waypoint(Coord::new(1, 1), None, "")
+            .unwrap();
     }
-    ctx.chain_paths(a, &["p1".into(), "p2".into(), "p3".into()], false).unwrap();
+    ctx.chain_paths(a, &["p1".into(), "p2".into(), "p3".into()], false)
+        .unwrap();
     ctx.register_event(
         a,
         Event::PathComplete,
@@ -146,7 +184,13 @@ fn scenario_chained_paths_and_events(log: &mut Vec<String>) {
         EventAction::SetCoordinate(Coord::new(19, 9)),
     )
     .unwrap();
-    ctx.register_event(a, Event::PathHolding, CallerKey::Path("p1".into()), EventAction::SetLayer(7)).unwrap();
+    ctx.register_event(
+        a,
+        Event::PathHolding,
+        CallerKey::Path("p1".into()),
+        EventAction::SetLayer(7),
+    )
+    .unwrap();
     ctx.activate_path(&mut NoopHooks, a, "p1");
     run_ticks(&mut ctx, log, &ids, 25, 0);
     flush(&mut ctx, log);
@@ -167,7 +211,10 @@ fn scenario_scenes(log: &mut Vec<String>) {
                 "X",
                 2,
                 VisualParams {
-                    colors: Some(ColorPair::new(Some(Color::from_hex("ff0000").unwrap()), None)),
+                    colors: Some(ColorPair::new(
+                        Some(Color::from_hex("ff0000").unwrap()),
+                        None,
+                    )),
                     ..Default::default()
                 },
             )
@@ -185,7 +232,16 @@ fn scenario_scenes(log: &mut Vec<String>) {
                 },
             )
             .unwrap();
-        scene.add_frame("Z", 1, VisualParams { bold: true, ..Default::default() }).unwrap();
+        scene
+            .add_frame(
+                "Z",
+                1,
+                VisualParams {
+                    bold: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
     }
     ctx.activate_scene(&mut NoopHooks, a, "plain");
     {
@@ -200,9 +256,13 @@ fn scenario_scenes(log: &mut Vec<String>) {
     {
         let ch = &mut ctx.terminal.arena[c.0 as usize];
         let uses = ch.uses_input_preexisting_colors;
-        ch.animation.new_scene(false, None, Some(Easing::InOutCubic), "eased", uses);
+        ch.animation
+            .new_scene(false, None, Some(Easing::InOutCubic), "eased", uses);
         let grad = Gradient::with_steps(
-            &[Color::from_hex("000000").unwrap(), Color::from_hex("ffffff").unwrap()],
+            &[
+                Color::from_hex("000000").unwrap(),
+                Color::from_hex("ffffff").unwrap(),
+            ],
             8,
             false,
         )
@@ -221,7 +281,10 @@ fn scenario_synced_scene(log: &mut Vec<String>) {
     log.push("=== scenario_synced_scene ===".into());
     let mut ctx = make_ctx();
     let ids = chars(&mut ctx, 2);
-    for (idx, (sync, pid)) in [(SyncMetric::Step, "sp"), (SyncMetric::Distance, "dp")].iter().enumerate() {
+    for (idx, (sync, pid)) in [(SyncMetric::Step, "sp"), (SyncMetric::Distance, "dp")]
+        .iter()
+        .enumerate()
+    {
         let id = ids[idx];
         let scene_id = format!("sync_{pid}");
         {
@@ -231,7 +294,8 @@ fn scenario_synced_scene(log: &mut Vec<String>) {
             path.new_waypoint(Coord::new(16, 9), None, "").unwrap();
             path.new_waypoint(Coord::new(2, 2), None, "").unwrap();
             let uses = ch.uses_input_preexisting_colors;
-            ch.animation.new_scene(false, Some(*sync), None, &scene_id, uses);
+            ch.animation
+                .new_scene(false, Some(*sync), None, &scene_id, uses);
             let scene = ch.animation.scenes.get_mut(&scene_id).unwrap();
             for sym in ["a", "b", "c", "d", "e", "f", "g", "h"] {
                 scene.add_frame(sym, 1, VisualParams::default()).unwrap();
@@ -257,14 +321,36 @@ fn scenario_scene_events_and_resume(log: &mut Vec<String>) {
         s1.add_frame("A", 3, VisualParams::default()).unwrap();
         s1.add_frame("B", 3, VisualParams::default()).unwrap();
         ch.animation.new_scene(false, None, None, "s2", uses);
-        ch.animation.scenes.get_mut("s2").unwrap().add_frame("C", 2, VisualParams::default()).unwrap();
-        ch.motion.new_path(1.0, None, None, 0, false, "mover").unwrap();
-        ch.motion.paths.get_mut("mover").unwrap().new_waypoint(Coord::new(8, 8), None, "").unwrap();
+        ch.animation
+            .scenes
+            .get_mut("s2")
+            .unwrap()
+            .add_frame("C", 2, VisualParams::default())
+            .unwrap();
+        ch.motion
+            .new_path(1.0, None, None, 0, false, "mover")
+            .unwrap();
+        ch.motion
+            .paths
+            .get_mut("mover")
+            .unwrap()
+            .new_waypoint(Coord::new(8, 8), None, "")
+            .unwrap();
     }
-    ctx.register_event(a, Event::SceneComplete, CallerKey::Scene("s1".into()), EventAction::ActivateScene("s2".into()))
-        .unwrap();
-    ctx.register_event(a, Event::SceneComplete, CallerKey::Scene("s2".into()), EventAction::ActivatePath("mover".into()))
-        .unwrap();
+    ctx.register_event(
+        a,
+        Event::SceneComplete,
+        CallerKey::Scene("s1".into()),
+        EventAction::ActivateScene("s2".into()),
+    )
+    .unwrap();
+    ctx.register_event(
+        a,
+        Event::SceneComplete,
+        CallerKey::Scene("s2".into()),
+        EventAction::ActivatePath("mover".into()),
+    )
+    .unwrap();
     ctx.activate_scene(&mut NoopHooks, a, "s1");
     run_ticks(&mut ctx, log, &ids, 2, 0);
     ctx.activate_scene(&mut NoopHooks, a, "s1");
@@ -274,8 +360,11 @@ fn scenario_scene_events_and_resume(log: &mut Vec<String>) {
 
 #[test]
 fn engine_traces_match_python() {
-    let fixture = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/engine_traces.txt"))
-        .expect("run tools/goldens/gen_engine_traces.py first");
+    let fixture = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/engine_traces.txt"
+    ))
+    .expect("run tools/goldens/gen_engine_traces.py first");
     let expected: Vec<&str> = fixture.lines().collect();
 
     let mut log: Vec<String> = Vec::new();
@@ -297,5 +386,10 @@ fn engine_traces_match_python() {
             mismatches += 1;
         }
     }
-    assert_eq!(mismatches, 0, "{mismatches} trace lines diverge (of {})", expected.len());
+    assert_eq!(
+        mismatches,
+        0,
+        "{mismatches} trace lines diverge (of {})",
+        expected.len()
+    );
 }

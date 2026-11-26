@@ -117,7 +117,12 @@ struct Laser {
 }
 
 /// Laser._make_sparks_pool initialize_sparks closure.
-fn initialize_spark(ctx: &mut EngineCtx, spark: CharId, spark_colors: &[Color], cooling_frames: i64) {
+fn initialize_spark(
+    ctx: &mut EngineCtx,
+    spark: CharId,
+    spark_colors: &[Color],
+    cooling_frames: i64,
+) {
     let ch = &mut ctx.terminal.arena[spark.0 as usize];
     ch.layer = 2;
     let input_symbol = ch.input_symbol.clone();
@@ -129,7 +134,10 @@ fn initialize_spark(ctx: &mut EngineCtx, spark: CharId, spark_colors: &[Color], 
             .add_frame(
                 &input_symbol,
                 cooling_frames,
-                VisualParams { colors: Some(ColorPair::new(Some(color.clone()), None)), ..Default::default() },
+                VisualParams {
+                    colors: Some(ColorPair::new(Some(color.clone()), None)),
+                    ..Default::default()
+                },
             )
             .expect("spark frame");
     }
@@ -168,24 +176,33 @@ impl LaserEtch {
                 .map_err(EngineError::Other)?
                 .spectrum
                 .into();
-        let spark_gradient = Gradient::new(&self.config.spark_gradient_stops, &[3, 8], false, false)
-            .map_err(EngineError::Other)?;
+        let spark_gradient =
+            Gradient::new(&self.config.spark_gradient_stops, &[3, 8], false, false)
+                .map_err(EngineError::Other)?;
 
         // Laser._make_sparks_pool
-        let mut sparks_pool =
-            ParticlePool::new(vec![".".to_string(), ",".to_string(), "*".to_string()], None, None)
-                .map_err(EngineError::Other)?;
+        let mut sparks_pool = ParticlePool::new(
+            vec![".".to_string(), ",".to_string(), "*".to_string()],
+            None,
+            None,
+        )
+        .map_err(EngineError::Other)?;
         let spark_colors = spark_gradient.spectrum.clone();
         let cooling_frames = self.config.spark_cooling_frames;
         sparks_pool
-            .preallocate(ctx, 2000, |ctx, spark| initialize_spark(ctx, spark, &spark_colors, cooling_frames))
+            .preallocate(ctx, 2000, |ctx, spark| {
+                initialize_spark(ctx, spark, &spark_colors, cooling_frames)
+            })
             .map_err(EngineError::Other)?;
         for &spark in &sparks_pool.particles {
             ctx.register_event(
                 spark,
                 Event::SceneComplete,
                 CallerKey::Scene("spark".to_string()),
-                EventAction::Callback(EffectCallback { id: CB_RECLAIM_SPARK, args: Vec::new() }),
+                EventAction::Callback(EffectCallback {
+                    id: CB_RECLAIM_SPARK,
+                    args: Vec::new(),
+                }),
             )
             .map_err(EngineError::Other)?;
         }
@@ -227,7 +244,12 @@ impl LaserEtch {
             }
             ctx.activate_scene(self, char_id, "laser");
         }
-        Ok(Laser { position: Coord::new(0, 0), beam_chars, spark_gradient, sparks_pool })
+        Ok(Laser {
+            position: Coord::new(0, 0),
+            beam_chars,
+            spark_gradient,
+            sparks_pool,
+        })
     }
 
     /// Laser.reposition.
@@ -237,7 +259,9 @@ impl LaserEtch {
         let mut row = target.row;
         let mut col = target.column;
         for &char_id in &laser.beam_chars {
-            ctx.terminal.arena[char_id.0 as usize].motion.set_coordinate(Coord::new(col, row));
+            ctx.terminal.arena[char_id.0 as usize]
+                .motion
+                .set_coordinate(Coord::new(col, row));
             row += 1;
             col += 1;
         }
@@ -261,14 +285,21 @@ impl LaserEtch {
                 |ctx, spark| initialize_spark(ctx, spark, &spark_colors, cooling_frames),
                 |ctx, spark| {
                     // setup_spark_path
-                    ctx.terminal.arena[spark.0 as usize].motion.set_coordinate(position);
+                    ctx.terminal.arena[spark.0 as usize]
+                        .motion
+                        .set_coordinate(position);
                     let spark_path = ctx.terminal.arena[spark.0 as usize]
                         .motion
                         .new_path(0.3, Some(Easing::OutSine), None, 0, false, "")
                         .expect("spark path");
-                    let fall_target_coord =
-                        Coord::new(ctx.rng.randint(position.column - 20, position.column + 20), bottom);
-                    let control = Coord::new(fall_target_coord.column, position.row + ctx.rng.randint(-10, 20));
+                    let fall_target_coord = Coord::new(
+                        ctx.rng.randint(position.column - 20, position.column + 20),
+                        bottom,
+                    );
+                    let control = Coord::new(
+                        fall_target_coord.column,
+                        position.row + ctx.rng.randint(-10, 20),
+                    );
                     ctx.terminal.arena[spark.0 as usize]
                         .motion
                         .paths
@@ -285,7 +316,12 @@ impl LaserEtch {
 
     /// Laser.disable.
     fn laser_disable(&mut self, ctx: &mut EngineCtx) {
-        let beam_chars = self.laser.as_ref().expect("laser missing").beam_chars.clone();
+        let beam_chars = self
+            .laser
+            .as_ref()
+            .expect("laser missing")
+            .beam_chars
+            .clone();
         for char_id in beam_chars {
             ctx.terminal.set_character_visibility(char_id, false);
         }
@@ -293,7 +329,12 @@ impl LaserEtch {
 }
 
 impl EffectHooks for LaserEtch {
-    fn dispatch_callback(&mut self, ctx: &mut EngineCtx, character: CharId, callback: &EffectCallback) {
+    fn dispatch_callback(
+        &mut self,
+        ctx: &mut EngineCtx,
+        character: CharId,
+        callback: &EffectCallback,
+    ) {
         if callback.id == CB_RECLAIM_SPARK {
             if let Some(laser) = self.laser.as_mut() {
                 laser.sparks_pool.reclaim(ctx, character, true, true);
@@ -305,9 +346,13 @@ impl EffectHooks for LaserEtch {
 impl Effect for LaserEtch {
     fn build(&mut self, ctx: &mut EngineCtx) -> Result<(), EngineError> {
         // LaserEtchIterator.build
-        let final_fg_gradient =
-            Gradient::new(&self.config.final_gradient_stops, &self.config.final_gradient_steps, false, false)
-                .map_err(EngineError::Other)?;
+        let final_fg_gradient = Gradient::new(
+            &self.config.final_gradient_stops,
+            &self.config.final_gradient_steps,
+            false,
+            false,
+        )
+        .map_err(EngineError::Other)?;
         let final_gradient_mapping = final_fg_gradient
             .build_coordinate_color_mapping(
                 ctx.terminal.canvas.text_bottom,
@@ -320,7 +365,8 @@ impl Effect for LaserEtch {
         let dynamic = ctx.terminal.config.existing_color_handling == ExistingColorHandling::Dynamic;
         let characters = {
             let filter = CharacterFilter::default();
-            ctx.terminal.get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
+            ctx.terminal
+                .get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
         };
         for id in characters {
             let (input_coord, input_symbol, input_fg, input_bg, uses_pre) = {
@@ -369,8 +415,12 @@ impl Effect for LaserEtch {
                     }
                 } else {
                     white_cooldown = Some(
-                        Gradient::with_steps(&[cool_last.clone(), Color::from_hex("ffffff").unwrap()], 8, false)
-                            .map_err(EngineError::Other)?,
+                        Gradient::with_steps(
+                            &[cool_last.clone(), Color::from_hex("ffffff").unwrap()],
+                            8,
+                            false,
+                        )
+                        .map_err(EngineError::Other)?,
                     );
                 }
             }
@@ -383,7 +433,10 @@ impl Effect for LaserEtch {
                         "^",
                         3,
                         VisualParams {
-                            colors: Some(ColorPair::new(Some(Color::from_hex("ffe680").unwrap()), None)),
+                            colors: Some(ColorPair::new(
+                                Some(Color::from_hex("ffe680").unwrap()),
+                                None,
+                            )),
                             ..Default::default()
                         },
                     )
@@ -412,13 +465,21 @@ impl Effect for LaserEtch {
                             .map_err(EngineError::Other)?;
                     } else {
                         scene
-                            .apply_gradient_to_symbols(&[input_symbol.clone()], 3, white_cooldown.as_ref(), None)
+                            .apply_gradient_to_symbols(
+                                &[input_symbol.clone()],
+                                3,
+                                white_cooldown.as_ref(),
+                                None,
+                            )
                             .map_err(EngineError::Other)?;
                         scene
                             .add_frame(
                                 &input_symbol,
                                 3,
-                                VisualParams { colors: Some(ColorPair::default()), ..Default::default() },
+                                VisualParams {
+                                    colors: Some(ColorPair::default()),
+                                    ..Default::default()
+                                },
                             )
                             .map_err(EngineError::Other)?;
                     }
@@ -431,7 +492,8 @@ impl Effect for LaserEtch {
                 // Dead upstream branch — see module docs. pending_chars stays empty.
             }
             EtchPattern::Algorithm => {
-                let mut algo = RecursiveBacktracker::new(ctx, None, true).map_err(EngineError::Other)?;
+                let mut algo =
+                    RecursiveBacktracker::new(ctx, None, true).map_err(EngineError::Other)?;
                 while !algo.complete {
                     algo.step(ctx);
                 }
@@ -478,7 +540,12 @@ impl Effect for LaserEtch {
             self.char_delay -= 1;
         }
         if !self.pending_chars.is_empty() {
-            let beam_chars = self.laser.as_ref().expect("laser missing").beam_chars.clone();
+            let beam_chars = self
+                .laser
+                .as_ref()
+                .expect("laser missing")
+                .beam_chars
+                .clone();
             for id in beam_chars {
                 ctx.active_characters.insert(id);
             }

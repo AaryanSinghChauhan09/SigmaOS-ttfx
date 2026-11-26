@@ -6,7 +6,8 @@ use clap::Args;
 
 use crate::cli::parse_color;
 use crate::effects::common::{
-    parse_easing, parse_gradient_direction, parse_gradient_steps, parse_positive_float, parse_positive_int,
+    parse_easing, parse_gradient_direction, parse_gradient_steps, parse_positive_float,
+    parse_positive_int,
 };
 use crate::engine::animation::{ExistingColorHandling, VisualParams};
 use crate::engine::character::CharId;
@@ -32,7 +33,11 @@ fn parse_pop_condition(s: &str) -> Result<PopCondition, String> {
         "row" => PopCondition::Row,
         "bottom" => PopCondition::Bottom,
         "anywhere" => PopCondition::Anywhere,
-        _ => return Err(format!("invalid choice: '{s}' (choose from 'row', 'bottom', 'anywhere')")),
+        _ => {
+            return Err(format!(
+                "invalid choice: '{s}' (choose from 'row', 'bottom', 'anywhere')"
+            ))
+        }
     })
 }
 
@@ -111,7 +116,8 @@ impl Bubbles {
             Color::from_hex("4b369d").unwrap(), // indigo
             Color::from_hex("70369d").unwrap(), // violet
         ];
-        let rainbow_gradient = Gradient::with_steps(&rainbow_stops, 5, false).expect("rainbow gradient");
+        let rainbow_gradient =
+            Gradient::with_steps(&rainbow_stops, 5, false).expect("rainbow gradient");
         Bubbles {
             config,
             bubbles: Vec::new(),
@@ -124,7 +130,9 @@ impl Bubbles {
 
     /// Bubble.set_character_coordinates.
     fn bubble_set_character_coordinates(&mut self, ctx: &mut EngineCtx, bubble: &mut Bubble) {
-        let anchor_coord = ctx.terminal.arena[bubble.anchor_char.0 as usize].motion.current_coord;
+        let anchor_coord = ctx.terminal.arena[bubble.anchor_char.0 as usize]
+            .motion
+            .current_coord;
         let points = geometry::find_coords_on_circle(
             anchor_coord,
             bubble.radius,
@@ -133,7 +141,9 @@ impl Bubbles {
         );
         for (i, &id) in bubble.characters.iter().enumerate() {
             let point = points[i];
-            ctx.terminal.arena[id.0 as usize].motion.set_coordinate(point);
+            ctx.terminal.arena[id.0 as usize]
+                .motion
+                .set_coordinate(point);
             if point.row == bubble.lowest_row {
                 bubble.landed = true;
             }
@@ -153,15 +163,27 @@ impl Bubbles {
         let radius = std::cmp::max(characters.len() as i64 / 5, 1);
         let anchor_char = ctx.terminal.add_character(" ", origin);
         let lowest_row = if self.config.pop_condition == PopCondition::Row {
-            characters.iter().map(|&id| ctx.terminal.arena[id.0 as usize].input_coord.row).min().unwrap()
+            characters
+                .iter()
+                .map(|&id| ctx.terminal.arena[id.0 as usize].input_coord.row)
+                .min()
+                .unwrap()
         } else {
             ctx.terminal.canvas.bottom
         };
-        let mut bubble = Bubble { characters, radius, anchor_char, lowest_row, landed: false };
+        let mut bubble = Bubble {
+            characters,
+            radius,
+            anchor_char,
+            lowest_row,
+            landed: false,
+        };
         self.bubble_set_character_coordinates(ctx, &mut bubble);
         bubble.landed = false;
         // make_waypoints
-        let waypoint_column = ctx.rng.randint(ctx.terminal.canvas.left, ctx.terminal.canvas.right);
+        let waypoint_column = ctx
+            .rng
+            .randint(ctx.terminal.canvas.left, ctx.terminal.canvas.right);
         let floor_path = {
             let ch = &mut ctx.terminal.arena[bubble.anchor_char.0 as usize];
             let path_id = ch
@@ -210,7 +232,10 @@ impl Bubbles {
                 rotated.extend_from_slice(&rainbow_gradient[..gradient_offset]);
                 rainbow_gradient = rotated;
                 ctx.activate_scene(self, id, &sheen_scene);
-                let active_scene = ctx.terminal.arena[id.0 as usize].animation.active_scene.clone();
+                let active_scene = ctx.terminal.arena[id.0 as usize]
+                    .animation
+                    .active_scene
+                    .clone();
                 if let Some(scene_id) = active_scene {
                     ctx.terminal.arena[id.0 as usize]
                         .animation
@@ -253,7 +278,9 @@ impl Bubbles {
 
     /// Bubble.pop.
     fn bubble_pop(&mut self, ctx: &mut EngineCtx, bubble: &Bubble) {
-        let anchor_coord = ctx.terminal.arena[bubble.anchor_char.0 as usize].motion.current_coord;
+        let anchor_coord = ctx.terminal.arena[bubble.anchor_char.0 as usize]
+            .motion
+            .current_coord;
         let points = geometry::find_coords_on_circle(
             anchor_coord,
             bubble.radius + 3,
@@ -301,14 +328,24 @@ impl Bubbles {
 }
 
 impl EffectHooks for Bubbles {
-    fn dispatch_callback(&mut self, _ctx: &mut EngineCtx, _character: CharId, _callback: &EffectCallback) {}
+    fn dispatch_callback(
+        &mut self,
+        _ctx: &mut EngineCtx,
+        _character: CharId,
+        _callback: &EffectCallback,
+    ) {
+    }
 }
 
 impl Effect for Bubbles {
     fn build(&mut self, ctx: &mut EngineCtx) -> Result<(), EngineError> {
-        let final_gradient =
-            Gradient::new(&self.config.final_gradient_stops, &self.config.final_gradient_steps, false, false)
-                .map_err(EngineError::Other)?;
+        let final_gradient = Gradient::new(
+            &self.config.final_gradient_stops,
+            &self.config.final_gradient_steps,
+            false,
+            false,
+        )
+        .map_err(EngineError::Other)?;
         let final_gradient_mapping = final_gradient
             .build_coordinate_color_mapping(
                 ctx.terminal.canvas.text_bottom,
@@ -321,7 +358,8 @@ impl Effect for Bubbles {
         let dynamic = ctx.terminal.config.existing_color_handling == ExistingColorHandling::Dynamic;
         let characters = {
             let filter = CharacterFilter::default();
-            ctx.terminal.get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
+            ctx.terminal
+                .get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
         };
         for id in characters {
             let (input_coord, input_symbol, input_fg, input_bg, uses_pre) = {
@@ -334,8 +372,10 @@ impl Effect for Bubbles {
                     ch.uses_input_preexisting_colors,
                 )
             };
-            self.character_final_color_map
-                .insert(id, final_gradient_mapping.get(&input_coord).unwrap().clone());
+            self.character_final_color_map.insert(
+                id,
+                final_gradient_mapping.get(&input_coord).unwrap().clone(),
+            );
             ctx.terminal.arena[id.0 as usize].layer = 1;
             let (pop_1_scene, pop_2_scene) = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
@@ -376,15 +416,23 @@ impl Effect for Bubbles {
             if dynamic {
                 let fg_gradient = match &input_fg {
                     Some(fg) => Some(
-                        Gradient::with_steps(&[self.config.pop_color.clone(), fg.clone()], 8, false)
-                            .map_err(EngineError::Other)?,
+                        Gradient::with_steps(
+                            &[self.config.pop_color.clone(), fg.clone()],
+                            8,
+                            false,
+                        )
+                        .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
                 let bg_gradient = match &input_bg {
                     Some(bg) => Some(
-                        Gradient::with_steps(&[self.config.pop_color.clone(), bg.clone()], 8, false)
-                            .map_err(EngineError::Other)?,
+                        Gradient::with_steps(
+                            &[self.config.pop_color.clone(), bg.clone()],
+                            8,
+                            false,
+                        )
+                        .map_err(EngineError::Other)?,
                     ),
                     None => None,
                 };
@@ -404,7 +452,10 @@ impl Effect for Bubbles {
                         .add_frame(
                             &input_symbol,
                             6,
-                            VisualParams { colors: Some(ColorPair::default()), ..Default::default() },
+                            VisualParams {
+                                colors: Some(ColorPair::default()),
+                                ..Default::default()
+                            },
                         )
                         .map_err(EngineError::Other)?;
                 }
@@ -418,7 +469,12 @@ impl Effect for Bubbles {
                     .scenes
                     .get_mut(&final_scene)
                     .unwrap()
-                    .apply_gradient_to_symbols(&[input_symbol.clone()], 6, Some(&char_final_gradient), None)
+                    .apply_gradient_to_symbols(
+                        &[input_symbol.clone()],
+                        6,
+                        Some(&char_final_gradient),
+                        None,
+                    )
                     .map_err(EngineError::Other)?;
             }
             ctx.register_event(
@@ -459,8 +515,9 @@ impl Effect for Bubbles {
         }
 
         let mut unbubbled_chars: Vec<CharId> = Vec::new();
-        for char_list in
-            ctx.terminal.get_characters_grouped(CharacterFilter::default(), CharacterGroup::RowBottomToTop)
+        for char_list in ctx
+            .terminal
+            .get_characters_grouped(CharacterFilter::default(), CharacterGroup::RowBottomToTop)
         {
             unbubbled_chars.extend(char_list);
         }
@@ -470,13 +527,16 @@ impl Effect for Bubbles {
             if unbubbled_chars.len() < 5 {
                 bubble_group.append(&mut unbubbled_chars);
             } else {
-                let count = ctx.rng.randint(5, std::cmp::min(unbubbled_chars.len() as i64, 20));
+                let count = ctx
+                    .rng
+                    .randint(5, std::cmp::min(unbubbled_chars.len() as i64, 20));
                 for _ in 0..count {
                     bubble_group.push(unbubbled_chars.remove(0));
                 }
             }
             let bubble_origin = Coord::new(
-                ctx.rng.randint(ctx.terminal.canvas.left, ctx.terminal.canvas.right),
+                ctx.rng
+                    .randint(ctx.terminal.canvas.left, ctx.terminal.canvas.right),
                 ctx.terminal.canvas.top + 10,
             );
             let new_bubble = self.make_bubble(ctx, bubble_origin, bubble_group)?;
@@ -488,8 +548,12 @@ impl Effect for Bubbles {
     }
 
     fn next_frame(&mut self, ctx: &mut EngineCtx) -> Option<String> {
-        if !self.animating_bubbles.is_empty() || !ctx.active_characters.is_empty() || !self.bubbles.is_empty() {
-            if !self.bubbles.is_empty() && self.steps_since_last_bubble >= self.config.bubble_delay {
+        if !self.animating_bubbles.is_empty()
+            || !ctx.active_characters.is_empty()
+            || !self.bubbles.is_empty()
+        {
+            if !self.bubbles.is_empty() && self.steps_since_last_bubble >= self.config.bubble_delay
+            {
                 let next_bubble = self.bubbles.remove(0);
                 for &id in &next_bubble.characters {
                     ctx.terminal.set_character_visibility(id, true);

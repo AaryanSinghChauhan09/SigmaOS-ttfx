@@ -1154,7 +1154,13 @@ mod differential_tests {
 
         terminal.repaint = true;
         let (whole, written) = frame(&mut terminal);
-        assert_eq!(written, format!("{}{}", terminal.move_cursor_to_top(), whole));
-        assert!(!frame(&mut terminal).1.is_empty(), "the cache was not invalidated");
+        assert_eq!(
+            written,
+            format!("{}{}", terminal.move_cursor_to_top(), whole)
+        );
+        assert!(
+            !frame(&mut terminal).1.is_empty(),
+            "the cache was not invalidated"
+        );
     }
 }

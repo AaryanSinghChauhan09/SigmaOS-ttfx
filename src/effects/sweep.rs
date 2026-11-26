@@ -75,14 +75,24 @@ impl Sweep {
 }
 
 impl EffectHooks for Sweep {
-    fn dispatch_callback(&mut self, _ctx: &mut EngineCtx, _character: CharId, _callback: &EffectCallback) {}
+    fn dispatch_callback(
+        &mut self,
+        _ctx: &mut EngineCtx,
+        _character: CharId,
+        _callback: &EffectCallback,
+    ) {
+    }
 }
 
 impl Effect for Sweep {
     fn build(&mut self, ctx: &mut EngineCtx) -> Result<(), EngineError> {
-        let final_fg_gradient =
-            Gradient::new(&self.config.final_gradient_stops, &self.config.final_gradient_steps, false, false)
-                .map_err(EngineError::Other)?;
+        let final_fg_gradient = Gradient::new(
+            &self.config.final_gradient_stops,
+            &self.config.final_gradient_steps,
+            false,
+            false,
+        )
+        .map_err(EngineError::Other)?;
         let final_gradient_mapping = final_fg_gradient
             .build_coordinate_color_mapping(
                 ctx.terminal.canvas.text_bottom,
@@ -101,7 +111,11 @@ impl Effect for Sweep {
         if dynamic {
             let characters = {
                 let filter = CharacterFilter::default();
-                ctx.terminal.get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
+                ctx.terminal.get_characters(
+                    &mut ctx.rng,
+                    filter,
+                    CharacterSort::TopToBottomLeftToRight,
+                )
             };
             for id in characters {
                 let ch = &ctx.terminal.arena[id.0 as usize];
@@ -117,10 +131,16 @@ impl Effect for Sweep {
             }
         }
 
-        let fills_filter =
-            CharacterFilter { inner_fill_chars: true, outer_fill_chars: true, ..Default::default() };
-        let characters =
-            ctx.terminal.get_characters(&mut ctx.rng, fills_filter, CharacterSort::TopToBottomLeftToRight);
+        let fills_filter = CharacterFilter {
+            inner_fill_chars: true,
+            outer_fill_chars: true,
+            ..Default::default()
+        };
+        let characters = ctx.terminal.get_characters(
+            &mut ctx.rng,
+            fills_filter,
+            CharacterSort::TopToBottomLeftToRight,
+        );
         for id in characters {
             let (is_fill, input_fg, input_bg, input_coord, input_symbol, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
@@ -137,13 +157,17 @@ impl Effect for Sweep {
                 let final_colors = if dynamic {
                     ColorPair::new(input_fg, input_bg)
                 } else {
-                    ColorPair::new(Some(final_gradient_mapping.get(&input_coord).unwrap().clone()), None)
+                    ColorPair::new(
+                        Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                        None,
+                    )
                 };
                 self.character_final_color_map.insert(id, final_colors);
             }
             {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
-                ch.animation.new_scene(false, None, None, "initial_sweep", uses_pre);
+                ch.animation
+                    .new_scene(false, None, None, "initial_sweep", uses_pre);
             }
             for symbol in &self.config.sweep_symbols {
                 let color = ctx.rng.choice(&shades_of_gray).clone();
@@ -155,7 +179,10 @@ impl Effect for Sweep {
                     .add_frame(
                         symbol,
                         5,
-                        VisualParams { colors: Some(ColorPair::new(Some(color), None)), ..Default::default() },
+                        VisualParams {
+                            colors: Some(ColorPair::new(Some(color), None)),
+                            ..Default::default()
+                        },
                     )
                     .map_err(EngineError::Other)?;
             }
@@ -169,12 +196,16 @@ impl Effect for Sweep {
                         &input_symbol,
                         1,
                         VisualParams {
-                            colors: Some(ColorPair::new(Some(Color::from_hex("#808080").unwrap()), None)),
+                            colors: Some(ColorPair::new(
+                                Some(Color::from_hex("#808080").unwrap()),
+                                None,
+                            )),
                             ..Default::default()
                         },
                     )
                     .map_err(EngineError::Other)?;
-                ch.animation.new_scene(false, None, None, "second_sweep", uses_pre);
+                ch.animation
+                    .new_scene(false, None, None, "second_sweep", uses_pre);
             }
             for symbol in &self.config.sweep_symbols {
                 let color = if dynamic {
@@ -190,7 +221,10 @@ impl Effect for Sweep {
                     .add_frame(
                         symbol,
                         5,
-                        VisualParams { colors: Some(ColorPair::new(Some(color), None)), ..Default::default() },
+                        VisualParams {
+                            colors: Some(ColorPair::new(Some(color), None)),
+                            ..Default::default()
+                        },
                     )
                     .map_err(EngineError::Other)?;
             }
@@ -210,17 +244,26 @@ impl Effect for Sweep {
                     .add_frame(
                         &input_symbol,
                         1,
-                        VisualParams { colors: Some(final_colors), ..Default::default() },
+                        VisualParams {
+                            colors: Some(final_colors),
+                            ..Default::default()
+                        },
                     )
                     .map_err(EngineError::Other)?;
             }
         }
 
-        let groups_first_sweep =
-            ctx.terminal.get_characters_grouped(fills_filter, self.config.first_sweep_direction);
-        self.easer = Some(SequenceEaser::new(groups_first_sweep, Easing::InOutCirc, 100));
-        self.groups_second_sweep =
-            ctx.terminal.get_characters_grouped(fills_filter, self.config.second_sweep_direction);
+        let groups_first_sweep = ctx
+            .terminal
+            .get_characters_grouped(fills_filter, self.config.first_sweep_direction);
+        self.easer = Some(SequenceEaser::new(
+            groups_first_sweep,
+            Easing::InOutCirc,
+            100,
+        ));
+        self.groups_second_sweep = ctx
+            .terminal
+            .get_characters_grouped(fills_filter, self.config.second_sweep_direction);
         Ok(())
     }
 
@@ -233,7 +276,11 @@ impl Effect for Sweep {
                     if self.first_phase {
                         ctx.terminal.set_character_visibility(id, true);
                     }
-                    let scene_id = if self.first_phase { "initial_sweep" } else { "second_sweep" };
+                    let scene_id = if self.first_phase {
+                        "initial_sweep"
+                    } else {
+                        "second_sweep"
+                    };
                     ctx.activate_scene(self, id, scene_id);
                 }
                 for &id in group {

@@ -84,7 +84,10 @@ impl Blackhole {
     fn prepare_blackhole(&mut self, ctx: &mut EngineCtx) -> Result<(), EngineError> {
         let star_symbols = ["*", "'", "`", "¤", "•", "°", "·"];
         let starfield_colors = Gradient::with_steps(
-            &[Color::from_hex("#4a4a4d").unwrap(), Color::from_hex("#ffffff").unwrap()],
+            &[
+                Color::from_hex("#4a4a4d").unwrap(),
+                Color::from_hex("#ffffff").unwrap(),
+            ],
             6,
             false,
         )
@@ -94,12 +97,18 @@ impl Blackhole {
         let mut gradient_map: Vec<Gradient> = Vec::new();
         for color in &starfield_colors {
             gradient_map.push(
-                Gradient::with_steps(&[color.clone(), Color::from_hex("#000000").unwrap()], 10, false)
-                    .map_err(EngineError::Other)?,
+                Gradient::with_steps(
+                    &[color.clone(), Color::from_hex("#000000").unwrap()],
+                    10,
+                    false,
+                )
+                .map_err(EngineError::Other)?,
             );
         }
         let mut available_chars: Vec<CharId> = ctx.terminal.input_characters.clone();
-        while (self.blackhole_chars.len() as i64) < self.blackhole_radius * 3 && !available_chars.is_empty() {
+        while (self.blackhole_chars.len() as i64) < self.blackhole_radius * 3
+            && !available_chars.is_empty()
+        {
             let index = ctx.rng.randrange(0, available_chars.len() as i64) as usize;
             self.blackhole_chars.push(available_chars.remove(index));
         }
@@ -128,7 +137,9 @@ impl Blackhole {
             {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 let uses_pre = ch.uses_input_preexisting_colors;
-                let blackhole_scn = ch.animation.new_scene(false, None, None, "blackhole", uses_pre);
+                let blackhole_scn =
+                    ch.animation
+                        .new_scene(false, None, None, "blackhole", uses_pre);
                 ch.animation
                     .scenes
                     .get_mut(&blackhole_scn)
@@ -137,7 +148,10 @@ impl Blackhole {
                         "*",
                         1,
                         VisualParams {
-                            colors: Some(ColorPair::new(Some(self.config.blackhole_color.clone()), None)),
+                            colors: Some(ColorPair::new(
+                                Some(self.config.blackhole_color.clone()),
+                                None,
+                            )),
                             ..Default::default()
                         },
                     )
@@ -165,14 +179,16 @@ impl Blackhole {
                 for coord in rotated {
                     let path = ch.motion.paths.get_mut(&rotation_path).unwrap();
                     let waypoint_id = path.waypoints.len().to_string();
-                    path.new_waypoint(coord, None, &waypoint_id).map_err(EngineError::Other)?;
+                    path.new_waypoint(coord, None, &waypoint_id)
+                        .map_err(EngineError::Other)?;
                 }
             }
         }
         let blackhole_set: HashSet<CharId> = self.blackhole_chars.iter().copied().collect();
         let characters = {
             let filter = CharacterFilter::default();
-            ctx.terminal.get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
+            ctx.terminal
+                .get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
         };
         let canvas_center = ctx.terminal.canvas.center;
         for &id in &characters {
@@ -239,7 +255,9 @@ impl Blackhole {
                             )
                             .map_err(EngineError::Other)?;
                     }
-                    scene.add_frame(" ", 1, VisualParams::default()).map_err(EngineError::Other)?;
+                    scene
+                        .add_frame(" ", 1, VisualParams::default())
+                        .map_err(EngineError::Other)?;
                     scene.sync = Some(SyncMetric::Distance);
                     scene_id
                 };
@@ -287,16 +305,20 @@ impl Blackhole {
             let next_pos = black_hole_ring_positions.remove(0);
             let (expand_path, collapse_path) = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
-                let expand_path =
-                    ch.motion.new_path(0.2, Some(Easing::InExpo), None, 0, false, "").map_err(EngineError::Other)?;
+                let expand_path = ch
+                    .motion
+                    .new_path(0.2, Some(Easing::InExpo), None, 0, false, "")
+                    .map_err(EngineError::Other)?;
                 ch.motion
                     .paths
                     .get_mut(&expand_path)
                     .unwrap()
                     .new_waypoint(next_pos, None, "")
                     .map_err(EngineError::Other)?;
-                let collapse_path =
-                    ch.motion.new_path(0.3, Some(Easing::InExpo), None, 0, false, "").map_err(EngineError::Other)?;
+                let collapse_path = ch
+                    .motion
+                    .new_path(0.3, Some(Easing::InExpo), None, 0, false, "")
+                    .map_err(EngineError::Other)?;
                 ch.motion
                     .paths
                     .get_mut(&collapse_path)
@@ -373,7 +395,8 @@ impl Blackhole {
         let dynamic = ctx.terminal.config.existing_color_handling == ExistingColorHandling::Dynamic;
         let characters = {
             let filter = CharacterFilter::default();
-            ctx.terminal.get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
+            ctx.terminal
+                .get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
         };
         for &id in &characters {
             let (input_coord, input_symbol, input_fg, input_bg, uses_pre) = {
@@ -451,21 +474,32 @@ impl Blackhole {
                         .add_frame(
                             &input_symbol,
                             1,
-                            VisualParams { colors: Some(ColorPair::default()), ..Default::default() },
+                            VisualParams {
+                                colors: Some(ColorPair::default()),
+                                ..Default::default()
+                            },
                         )
                         .map_err(EngineError::Other)?;
                 } else {
                     let cooling_gradient_fg = match &input_fg {
                         Some(fg) => Some(
-                            Gradient::with_steps(&[explode_star_color.clone(), fg.clone()], 10, false)
-                                .map_err(EngineError::Other)?,
+                            Gradient::with_steps(
+                                &[explode_star_color.clone(), fg.clone()],
+                                10,
+                                false,
+                            )
+                            .map_err(EngineError::Other)?,
                         ),
                         None => None,
                     };
                     let cooling_gradient_bg = match &input_bg {
                         Some(bg) => Some(
-                            Gradient::with_steps(&[explode_star_color.clone(), bg.clone()], 10, false)
-                                .map_err(EngineError::Other)?,
+                            Gradient::with_steps(
+                                &[explode_star_color.clone(), bg.clone()],
+                                10,
+                                false,
+                            )
+                            .map_err(EngineError::Other)?,
                         ),
                         None => None,
                     };
@@ -492,7 +526,12 @@ impl Blackhole {
                     .scenes
                     .get_mut(&cooling_scn)
                     .unwrap()
-                    .apply_gradient_to_symbols(&[input_symbol.clone()], 20, Some(&cooling_gradient), None)
+                    .apply_gradient_to_symbols(
+                        &[input_symbol.clone()],
+                        20,
+                        Some(&cooling_gradient),
+                        None,
+                    )
                     .map_err(EngineError::Other)?;
             }
             ctx.register_event(
@@ -518,7 +557,13 @@ impl Blackhole {
 }
 
 impl EffectHooks for Blackhole {
-    fn dispatch_callback(&mut self, _ctx: &mut EngineCtx, _character: CharId, _callback: &EffectCallback) {}
+    fn dispatch_callback(
+        &mut self,
+        _ctx: &mut EngineCtx,
+        _character: CharId,
+        _callback: &EffectCallback,
+    ) {
+    }
 }
 
 impl Effect for Blackhole {
@@ -531,9 +576,13 @@ impl Effect for Blackhole {
             ),
             3,
         );
-        let final_gradient =
-            Gradient::new(&self.config.final_gradient_stops, &self.config.final_gradient_steps, false, false)
-                .map_err(EngineError::Other)?;
+        let final_gradient = Gradient::new(
+            &self.config.final_gradient_stops,
+            &self.config.final_gradient_steps,
+            false,
+            false,
+        )
+        .map_err(EngineError::Other)?;
         let final_gradient_mapping = final_gradient
             .build_coordinate_color_mapping(
                 ctx.terminal.canvas.text_bottom,
@@ -545,12 +594,15 @@ impl Effect for Blackhole {
             .map_err(EngineError::Other)?;
         let characters = {
             let filter = CharacterFilter::default();
-            ctx.terminal.get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
+            ctx.terminal
+                .get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
         };
         for &id in &characters {
             let input_coord = ctx.terminal.arena[id.0 as usize].input_coord;
-            self.character_final_color_map
-                .insert(id, final_gradient_mapping.get(&input_coord).unwrap().clone());
+            self.character_final_color_map.insert(
+                id,
+                final_gradient_mapping.get(&input_coord).unwrap().clone(),
+            );
         }
         self.prepare_blackhole(ctx)?;
         self.formation_delay = std::cmp::max(floor_div(100, self.blackhole_chars.len() as i64), 6);
@@ -587,14 +639,20 @@ impl Effect for Blackhole {
                         }
                         self.awaiting_consumption_chars.clear();
                     } else {
-                        let blackhole_set: HashSet<CharId> = self.blackhole_chars.iter().copied().collect();
-                        if ctx.active_characters.iter().all(|id| blackhole_set.contains(&id)) {
+                        let blackhole_set: HashSet<CharId> =
+                            self.blackhole_chars.iter().copied().collect();
+                        if ctx
+                            .active_characters
+                            .iter()
+                            .all(|id| blackhole_set.contains(&id))
+                        {
                             self.phase = Phase::Collapsing;
                         }
                     }
                 }
                 Phase::Collapsing => {
-                    self.collapse_blackhole(ctx).expect("collapse_blackhole failed");
+                    self.collapse_blackhole(ctx)
+                        .expect("collapse_blackhole failed");
                     self.phase = Phase::Exploding;
                 }
                 Phase::Exploding => {
@@ -602,7 +660,8 @@ impl Effect for Blackhole {
                         let ch = &ctx.terminal.arena[id.0 as usize];
                         ch.motion.active_path.is_none() && ch.animation.active_scene.is_none()
                     }) {
-                        self.explode_singularity(ctx).expect("explode_singularity failed");
+                        self.explode_singularity(ctx)
+                            .expect("explode_singularity failed");
                         self.phase = Phase::Complete;
                     }
                 }

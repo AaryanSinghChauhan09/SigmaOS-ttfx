@@ -43,8 +43,11 @@ const EASING_GOLDEN_ORDER: &[Easing] = &[
 
 #[test]
 fn easing_matches_python_bit_exactly() {
-    let data = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/easing_goldens.bin"))
-        .expect("run tools/goldens/gen_easing.py first");
+    let data = std::fs::read(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/easing_goldens.bin"
+    ))
+    .expect("run tools/goldens/gen_easing.py first");
     assert_eq!(data.len(), EASING_GOLDEN_ORDER.len() * 1001 * 8);
     let mut offset = 0;
     let mut mismatches = 0;
@@ -64,7 +67,11 @@ fn easing_matches_python_bit_exactly() {
                 // CubicBezier tolerates 1 ulp even here: in optimized builds
                 // LLVM const-folds some powf calls, which can differ from
                 // runtime libm by an ulp.
-                let tolerance = if matches!(easing, Easing::CubicBezier(..)) { 1 } else { 0 };
+                let tolerance = if matches!(easing, Easing::CubicBezier(..)) {
+                    1
+                } else {
+                    0
+                };
                 actual.to_bits().abs_diff(expected.to_bits()) <= tolerance
             } else {
                 (actual - expected).abs() <= 1e-15
@@ -81,5 +88,8 @@ fn easing_matches_python_bit_exactly() {
             }
         }
     }
-    assert_eq!(mismatches, 0, "{mismatches} easing samples diverge from Python");
+    assert_eq!(
+        mismatches, 0,
+        "{mismatches} easing samples diverge from Python"
+    );
 }

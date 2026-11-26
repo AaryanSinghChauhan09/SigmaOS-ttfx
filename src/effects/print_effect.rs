@@ -6,7 +6,8 @@ use clap::Args;
 
 use crate::cli::parse_color;
 use crate::effects::common::{
-    parse_easing, parse_gradient_direction, parse_gradient_steps, parse_positive_float, parse_positive_int,
+    parse_easing, parse_gradient_direction, parse_gradient_steps, parse_positive_float,
+    parse_positive_int,
 };
 use crate::engine::animation::{ExistingColorHandling, VisualParams};
 use crate::engine::character::CharId;
@@ -97,18 +98,26 @@ impl Print {
             processed_rows: Vec::new(),
             typing_head: CharId(0),
             character_final_color_map: HashMap::new(),
-            current_row: Row { untyped_chars: Vec::new(), typed_chars: Vec::new() },
+            current_row: Row {
+                untyped_chars: Vec::new(),
+                typed_chars: Vec::new(),
+            },
             typing: false,
             last_column: 0,
         }
     }
 
     /// PrintIterator.Row.__init__.
-    fn make_row(&mut self, ctx: &mut EngineCtx, characters: Vec<CharId>) -> Result<Row, EngineError> {
+    fn make_row(
+        &mut self,
+        ctx: &mut EngineCtx,
+        characters: Vec<CharId>,
+    ) -> Result<Row, EngineError> {
         let dynamic = ctx.terminal.config.existing_color_handling == ExistingColorHandling::Dynamic;
         let typing_head_color = Color::from_hex("ffffff").unwrap();
-        let all_spaces =
-            characters.iter().all(|&id| ctx.terminal.arena[id.0 as usize].input_symbol == " ");
+        let all_spaces = characters
+            .iter()
+            .all(|&id| ctx.terminal.arena[id.0 as usize].input_symbol == " ");
         let characters: Vec<CharId> = if all_spaces {
             characters.into_iter().take(1).collect()
         } else {
@@ -128,7 +137,11 @@ impl Print {
         for id in characters {
             let (input_symbol, input_column, uses_pre) = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
-                (ch.input_symbol.clone(), ch.input_coord.column, ch.uses_input_preexisting_colors)
+                (
+                    ch.input_symbol.clone(),
+                    ch.input_coord.column,
+                    ch.uses_input_preexisting_colors,
+                )
             };
             let typed_animation = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
@@ -171,14 +184,22 @@ impl Print {
                         )
                         .map_err(EngineError::Other)?;
                 } else {
-                    let head_gradient =
-                        Gradient::with_steps(&[typing_head_color.clone(), typing_head_color.clone()], 4, false)
-                            .map_err(EngineError::Other)?;
+                    let head_gradient = Gradient::with_steps(
+                        &[typing_head_color.clone(), typing_head_color.clone()],
+                        4,
+                        false,
+                    )
+                    .map_err(EngineError::Other)?;
                     let ch = &mut ctx.terminal.arena[id.0 as usize];
                     let scene = ch.animation.scenes.get_mut(&typed_animation).unwrap();
                     scene
                         .apply_gradient_to_symbols(
-                            &["█".to_string(), "▓".to_string(), "▒".to_string(), "░".to_string()],
+                            &[
+                                "█".to_string(),
+                                "▓".to_string(),
+                                "▒".to_string(),
+                                "░".to_string(),
+                            ],
                             3,
                             Some(&head_gradient),
                             None,
@@ -188,7 +209,10 @@ impl Print {
                         .add_frame(
                             &input_symbol,
                             3,
-                            VisualParams { colors: Some(ColorPair::default()), ..Default::default() },
+                            VisualParams {
+                                colors: Some(ColorPair::default()),
+                                ..Default::default()
+                            },
                         )
                         .map_err(EngineError::Other)?;
                 }
@@ -200,8 +224,9 @@ impl Print {
                     .fg_color
                     .clone()
                     .expect("final fg color present");
-                let color_gradient = Gradient::with_steps(&[typing_head_color.clone(), final_fg], 5, false)
-                    .map_err(EngineError::Other)?;
+                let color_gradient =
+                    Gradient::with_steps(&[typing_head_color.clone(), final_fg], 5, false)
+                        .map_err(EngineError::Other)?;
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
                 ch.animation
                     .scenes
@@ -224,12 +249,20 @@ impl Print {
             ctx.activate_scene(self, id, &typed_animation);
             untyped_chars.push(id);
         }
-        Ok(Row { untyped_chars, typed_chars: Vec::new() })
+        Ok(Row {
+            untyped_chars,
+            typed_chars: Vec::new(),
+        })
     }
 }
 
 impl EffectHooks for Print {
-    fn dispatch_callback(&mut self, ctx: &mut EngineCtx, character: CharId, callback: &EffectCallback) {
+    fn dispatch_callback(
+        &mut self,
+        ctx: &mut EngineCtx,
+        character: CharId,
+        callback: &EffectCallback,
+    ) {
         if callback.id == SET_INVISIBLE_CALLBACK {
             // EventHandler.Callback(self.terminal.set_character_visibility, False)
             ctx.terminal.set_character_visibility(character, false);
@@ -242,9 +275,13 @@ impl Effect for Print {
         // PrintIterator.__init__: the typing head is added before build().
         self.typing_head = ctx.terminal.add_character("█", Coord::new(1, 1));
 
-        let final_gradient =
-            Gradient::new(&self.config.final_gradient_stops, &self.config.final_gradient_steps, false, false)
-                .map_err(EngineError::Other)?;
+        let final_gradient = Gradient::new(
+            &self.config.final_gradient_stops,
+            &self.config.final_gradient_steps,
+            false,
+            false,
+        )
+        .map_err(EngineError::Other)?;
         let final_gradient_mapping = final_gradient
             .build_coordinate_color_mapping(
                 ctx.terminal.canvas.text_bottom,
@@ -255,7 +292,11 @@ impl Effect for Print {
             )
             .map_err(EngineError::Other)?;
         let dynamic = ctx.terminal.config.existing_color_handling == ExistingColorHandling::Dynamic;
-        let filter = CharacterFilter { inner_fill_chars: true, outer_fill_chars: true, ..Default::default() };
+        let filter = CharacterFilter {
+            inner_fill_chars: true,
+            outer_fill_chars: true,
+            ..Default::default()
+        };
         let characters = ctx.terminal.get_characters(
             &mut ctx.rng,
             filter,
@@ -265,7 +306,10 @@ impl Effect for Print {
             let final_colors = {
                 let ch = &ctx.terminal.arena[id.0 as usize];
                 if dynamic {
-                    ColorPair::new(ch.animation.input_fg_color.clone(), ch.animation.input_bg_color.clone())
+                    ColorPair::new(
+                        ch.animation.input_fg_color.clone(),
+                        ch.animation.input_bg_color.clone(),
+                    )
                 } else {
                     ColorPair::new(
                         Some(
@@ -280,7 +324,9 @@ impl Effect for Print {
             };
             self.character_final_color_map.insert(id, final_colors);
         }
-        let input_rows = ctx.terminal.get_characters_grouped(filter, CharacterGroup::RowTopToBottom);
+        let input_rows = ctx
+            .terminal
+            .get_characters_grouped(filter, CharacterGroup::RowTopToBottom);
         for input_row in input_rows {
             let row = self.make_row(ctx, input_row)?;
             self.pending_rows.push(row);
@@ -293,22 +339,32 @@ impl Effect for Print {
 
     fn next_frame(&mut self, ctx: &mut EngineCtx) -> Option<String> {
         if !ctx.active_characters.is_empty() || self.typing {
-            if ctx.terminal.arena[self.typing_head.0 as usize].motion.active_path.is_some() {
+            if ctx.terminal.arena[self.typing_head.0 as usize]
+                .motion
+                .active_path
+                .is_some()
+            {
                 // print head is performing a carriage return
             } else if !self.current_row.untyped_chars.is_empty() {
-                let count =
-                    std::cmp::min(self.current_row.untyped_chars.len() as i64, self.config.print_speed);
+                let count = std::cmp::min(
+                    self.current_row.untyped_chars.len() as i64,
+                    self.config.print_speed,
+                );
                 for _ in 0..count {
                     if let Some(next_char) = self.current_row.type_char() {
                         ctx.terminal.set_character_visibility(next_char, true);
                         ctx.active_characters.insert(next_char);
-                        self.last_column = ctx.terminal.arena[next_char.0 as usize].input_coord.column;
+                        self.last_column =
+                            ctx.terminal.arena[next_char.0 as usize].input_coord.column;
                     }
                 }
             } else {
                 let finished_row = std::mem::replace(
                     &mut self.current_row,
-                    Row { untyped_chars: Vec::new(), typed_chars: Vec::new() },
+                    Row {
+                        untyped_chars: Vec::new(),
+                        typed_chars: Vec::new(),
+                    },
                 );
                 self.processed_rows.push(finished_row);
                 if !self.pending_rows.is_empty() {
@@ -349,7 +405,8 @@ impl Effect for Print {
                         let head = &mut ctx.terminal.arena[self.typing_head.0 as usize];
                         head.motion.set_coordinate(Coord::new(self.last_column, 1));
                     }
-                    ctx.terminal.set_character_visibility(self.typing_head, true);
+                    ctx.terminal
+                        .set_character_visibility(self.typing_head, true);
                     let target_column = ctx.terminal.arena
                         [self.current_row.untyped_chars[0].0 as usize]
                         .input_coord
@@ -384,7 +441,10 @@ impl Effect for Print {
                         self.typing_head,
                         Event::PathComplete,
                         CallerKey::Path("carriage_return_path".to_string()),
-                        EventAction::Callback(EffectCallback { id: SET_INVISIBLE_CALLBACK, args: Vec::new() }),
+                        EventAction::Callback(EffectCallback {
+                            id: SET_INVISIBLE_CALLBACK,
+                            args: Vec::new(),
+                        }),
                     );
                     ctx.active_characters.insert(self.typing_head);
                 } else {

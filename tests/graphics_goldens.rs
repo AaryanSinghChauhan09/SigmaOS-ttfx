@@ -12,7 +12,11 @@ fn generate_lines() -> Vec<String> {
         (vec!["000000", "ffffff"], vec![7], false),
         (vec!["ff0000", "00ff00", "0000ff"], vec![5], true),
         (vec!["123456"], vec![4], false),
-        (vec!["ff5733", "33ff57", "5733ff", "f0f0f0"], vec![3, 9], false),
+        (
+            vec!["ff5733", "33ff57", "5733ff", "f0f0f0"],
+            vec![3, 9],
+            false,
+        ),
         (vec!["0a0b0c", "f1e2d3"], vec![1], false),
     ];
     for (stops, steps, do_loop) in &grad_cases {
@@ -23,22 +27,43 @@ fn generate_lines() -> Vec<String> {
         let steps_repr = if steps.len() == 1 {
             format!("({},)", steps[0])
         } else {
-            format!("({})", steps.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "))
+            format!(
+                "({})",
+                steps
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
         };
         let py_loop = if *do_loop { "True" } else { "False" };
         lines.push(format!(
             "grad {} s={steps_repr} loop={py_loop}: {}",
             stops.join("+"),
-            g.spectrum.iter().map(|c| c.rgb_color.clone()).collect::<Vec<_>>().join(";")
+            g.spectrum
+                .iter()
+                .map(|c| c.rgb_color.clone())
+                .collect::<Vec<_>>()
+                .join(";")
         ));
     }
 
-    let colors: Vec<Color> = ["8A008A", "00D1FF", "FFFFFF"].iter().map(|s| Color::from_hex(s).unwrap()).collect();
+    let colors: Vec<Color> = ["8A008A", "00D1FF", "FFFFFF"]
+        .iter()
+        .map(|s| Color::from_hex(s).unwrap())
+        .collect();
     let g = Gradient::with_steps(&colors, 12, false).unwrap();
     for i in 0..=20 {
         let f = i as f64 / 20.0;
-        let f_label = if f == f.trunc() { format!("{f:.1}") } else { format!("{f}") };
-        lines.push(format!("frac {f_label}: {}", g.get_color_at_fraction(f).unwrap().rgb_color));
+        let f_label = if f == f.trunc() {
+            format!("{f:.1}")
+        } else {
+            format!("{f}")
+        };
+        lines.push(format!(
+            "frac {f_label}: {}",
+            g.get_color_at_fraction(f).unwrap().rgb_color
+        ));
     }
 
     for (name, direction) in [
@@ -69,7 +94,11 @@ fn generate_lines() -> Vec<String> {
             factor,
         )
         .unwrap();
-        let f_label = if factor == factor.trunc() { format!("{factor:.1}") } else { format!("{factor}") };
+        let f_label = if factor == factor.trunc() {
+            format!("{factor:.1}")
+        } else {
+            format!("{factor}")
+        };
         lines.push(format!("shift {f_label}: {}", c.rgb_color));
     }
 

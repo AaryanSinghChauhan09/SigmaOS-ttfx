@@ -544,7 +544,10 @@ impl Engine {
     #[inline(always)]
     pub fn set_visual(&mut self, slot: u32, visual: Visual) {
         // the effect's slot, checked
-        assert!((slot as usize) < self.ch.len(), "set_visual: no character {slot}");
+        assert!(
+            (slot as usize) < self.ch.len(),
+            "set_visual: no character {slot}"
+        );
         self.show_visual(slot, visual);
     }
 

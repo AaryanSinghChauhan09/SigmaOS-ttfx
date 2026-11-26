@@ -660,7 +660,10 @@ impl Engine {
     /// the remaining queue and playback is not reset.
     pub fn activate_scene(&mut self, hooks: &mut dyn Hooks, slot: u32, scene: SceneId) {
         // the effect's slot, checked: doze_wake and show_visual index unchecked
-        assert!((slot as usize) < self.ch.len(), "activate_scene: no character {slot}");
+        assert!(
+            (slot as usize) < self.ch.len(),
+            "activate_scene: no character {slot}"
+        );
         self.doze_wake(slot);
         let rec = &self.scenes.recs[scene as usize];
         assert!(!rec.is_drained(), "activate_scene: empty scene");
@@ -713,7 +716,10 @@ impl Engine {
     /// Animation.step_animation plus _complete_scene_if_finished.
     pub fn step_animation(&mut self, hooks: &mut dyn Hooks, slot: u32) {
         // the effect's slot, checked: the steps below index unchecked
-        assert!((slot as usize) < self.ch.len(), "step_animation: no character {slot}");
+        assert!(
+            (slot as usize) < self.ch.len(),
+            "step_animation: no character {slot}"
+        );
         self.doze_wake(slot);
         self.step_animation_awake(hooks, slot, false);
     }

@@ -5,7 +5,9 @@ use std::collections::HashMap;
 use clap::Args;
 
 use crate::cli::parse_color;
-use crate::effects::common::{parse_easing, parse_gradient_direction, parse_gradient_steps, parse_positive_float};
+use crate::effects::common::{
+    parse_easing, parse_gradient_direction, parse_gradient_steps, parse_positive_float,
+};
 use crate::engine::animation::{ExistingColorHandling, SyncMetric, VisualParams};
 use crate::engine::character::CharId;
 use crate::engine::ctx::{EffectHooks, EngineCtx};
@@ -65,14 +67,24 @@ impl Scattered {
 }
 
 impl EffectHooks for Scattered {
-    fn dispatch_callback(&mut self, _ctx: &mut EngineCtx, _character: CharId, _callback: &EffectCallback) {}
+    fn dispatch_callback(
+        &mut self,
+        _ctx: &mut EngineCtx,
+        _character: CharId,
+        _callback: &EffectCallback,
+    ) {
+    }
 }
 
 impl Effect for Scattered {
     fn build(&mut self, ctx: &mut EngineCtx) -> Result<(), EngineError> {
-        let final_gradient =
-            Gradient::new(&self.config.final_gradient_stops, &self.config.final_gradient_steps, false, false)
-                .map_err(EngineError::Other)?;
+        let final_gradient = Gradient::new(
+            &self.config.final_gradient_stops,
+            &self.config.final_gradient_steps,
+            false,
+            false,
+        )
+        .map_err(EngineError::Other)?;
         let final_gradient_mapping = final_gradient
             .build_coordinate_color_mapping(
                 ctx.terminal.canvas.text_bottom,
@@ -86,7 +98,8 @@ impl Effect for Scattered {
         let dynamic = ctx.terminal.config.existing_color_handling == ExistingColorHandling::Dynamic;
         let characters = {
             let filter = CharacterFilter::default();
-            ctx.terminal.get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
+            ctx.terminal
+                .get_characters(&mut ctx.rng, filter, CharacterSort::TopToBottomLeftToRight)
         };
         for id in characters {
             let (input_fg, input_bg, input_coord, input_symbol, uses_pre) = {
@@ -102,9 +115,13 @@ impl Effect for Scattered {
             let final_colors = if dynamic {
                 ColorPair::new(input_fg, input_bg)
             } else {
-                ColorPair::new(Some(final_gradient_mapping.get(&input_coord).unwrap().clone()), None)
+                ColorPair::new(
+                    Some(final_gradient_mapping.get(&input_coord).unwrap().clone()),
+                    None,
+                )
             };
-            self.character_final_color_map.insert(id, final_colors.clone());
+            self.character_final_color_map
+                .insert(id, final_colors.clone());
             let start_coord = if ctx.terminal.canvas.right < 2 || ctx.terminal.canvas.top < 2 {
                 Coord::new(1, 1)
             } else {
@@ -115,7 +132,14 @@ impl Effect for Scattered {
                 ch.motion.set_coordinate(start_coord);
                 let path_id = ch
                     .motion
-                    .new_path(self.config.movement_speed, Some(self.config.movement_easing), None, 0, false, "")
+                    .new_path(
+                        self.config.movement_speed,
+                        Some(self.config.movement_easing),
+                        None,
+                        0,
+                        false,
+                        "",
+                    )
                     .map_err(EngineError::Other)?;
                 ch.motion
                     .paths
@@ -143,7 +167,8 @@ impl Effect for Scattered {
             ctx.terminal.set_character_visibility(id, true);
             let gradient_scn = {
                 let ch = &mut ctx.terminal.arena[id.0 as usize];
-                ch.animation.new_scene(false, Some(SyncMetric::Distance), None, "", uses_pre)
+                ch.animation
+                    .new_scene(false, Some(SyncMetric::Distance), None, "", uses_pre)
             };
             {
                 let scene = {
@@ -155,14 +180,21 @@ impl Effect for Scattered {
                         .add_frame(
                             &input_symbol,
                             self.config.final_gradient_frames,
-                            VisualParams { colors: Some(final_colors.clone()), ..Default::default() },
+                            VisualParams {
+                                colors: Some(final_colors.clone()),
+                                ..Default::default()
+                            },
                         )
                         .map_err(EngineError::Other)?;
                 } else {
-                    let final_fg_color = final_colors.fg_color.clone().expect("gradient mapping fg");
-                    let char_gradient =
-                        Gradient::with_steps(&[final_gradient.spectrum[0].clone(), final_fg_color], 10, false)
-                            .map_err(EngineError::Other)?;
+                    let final_fg_color =
+                        final_colors.fg_color.clone().expect("gradient mapping fg");
+                    let char_gradient = Gradient::with_steps(
+                        &[final_gradient.spectrum[0].clone(), final_fg_color],
+                        10,
+                        false,
+                    )
+                    .map_err(EngineError::Other)?;
                     scene
                         .apply_gradient_to_symbols(
                             &[input_symbol.clone()],

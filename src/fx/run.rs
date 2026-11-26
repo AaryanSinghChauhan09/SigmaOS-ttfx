@@ -118,7 +118,9 @@ pub fn run_effect(
             if differential {
                 if e.terminal.take_repaint() {
                     output.invalidate();
-                } else if let Some(bytes) = e.renderer().differential_frame(&mut output, &move_to_top) {
+                } else if let Some(bytes) =
+                    e.renderer().differential_frame(&mut output, &move_to_top)
+                {
                     out.write_all(bytes)?;
                     continue;
                 }

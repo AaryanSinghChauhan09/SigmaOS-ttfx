@@ -45,7 +45,13 @@ pub struct Segment {
 
 impl Segment {
     pub fn new(start: u32, end: u32, distance: f64) -> Self {
-        Segment { start, end, distance, enter_event_triggered: false, exit_event_triggered: false }
+        Segment {
+            start,
+            end,
+            distance,
+            enter_event_triggered: false,
+            exit_event_triggered: false,
+        }
     }
 }
 
@@ -83,7 +89,9 @@ impl Path {
         loop_: bool,
     ) -> Result<Self, String> {
         if speed <= 0.0 {
-            return Err(format!("Path speed must be greater than 0. Received: {speed}"));
+            return Err(format!(
+                "Path speed must be greater than 0. Received: {speed}"
+            ));
         }
         Ok(Path {
             path_id: Rc::from(path_id),
@@ -110,7 +118,9 @@ impl Path {
     /// The waypoint a segment endpoint refers to.
     pub fn waypoint_at(&self, index: u32) -> &Waypoint {
         if index == Path::ORIGIN {
-            self.origin_waypoint.as_ref().expect("origin segment without an origin waypoint")
+            self.origin_waypoint
+                .as_ref()
+                .expect("origin segment without an origin waypoint")
         } else {
             &self.waypoints[index as usize]
         }
@@ -133,14 +143,22 @@ impl Path {
                 current_id += 1;
             }
         } else {
-            if self.waypoints.iter().any(|w| *w.waypoint_id == *waypoint_id) {
+            if self
+                .waypoints
+                .iter()
+                .any(|w| *w.waypoint_id == *waypoint_id)
+            {
                 return Err(format!("duplicate waypoint id: {waypoint_id}"));
             }
             Rc::from(waypoint_id)
         };
         // Python: empty tuple bezier_control is falsy -> None
         let bezier_control = bezier_control.filter(|v| !v.is_empty()).map(Rc::from);
-        let waypoint = Waypoint { waypoint_id, coord, bezier_control };
+        let waypoint = Waypoint {
+            waypoint_id,
+            coord,
+            bezier_control,
+        };
         self.add_waypoint_to_path(waypoint.clone());
         Ok(waypoint)
     }
@@ -154,12 +172,15 @@ impl Path {
         let prev = &self.waypoints[self.waypoints.len() - 2];
         let waypoint = &self.waypoints[self.waypoints.len() - 1];
         let distance_from_previous = match &waypoint.bezier_control {
-            Some(control) => geometry::find_length_of_bezier_curve(prev.coord, control, waypoint.coord),
+            Some(control) => {
+                geometry::find_length_of_bezier_curve(prev.coord, control, waypoint.coord)
+            }
             None => geometry::find_length_of_line(prev.coord, waypoint.coord, true),
         };
         self.total_distance += distance_from_previous;
         let end = (self.waypoints.len() - 1) as u32;
-        self.segments.push(Segment::new(end - 1, end, distance_from_previous));
+        self.segments
+            .push(Segment::new(end - 1, end, distance_from_previous));
         self.max_steps = round_half_even(self.total_distance / self.speed);
     }
 

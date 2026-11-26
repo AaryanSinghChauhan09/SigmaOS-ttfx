@@ -28,7 +28,11 @@ fn same_allocation(entry: &str, key: &str) -> bool {
 
 impl<V> OrderedMap<V> {
     pub fn new() -> Self {
-        OrderedMap { entries: Vec::new(), index: None, last_lookup: Cell::new(NO_CACHED_LOOKUP) }
+        OrderedMap {
+            entries: Vec::new(),
+            index: None,
+            last_lookup: Cell::new(NO_CACHED_LOOKUP),
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -83,7 +87,8 @@ impl<V> OrderedMap<V> {
     /// The map's own handle for `key`, for callers that want later lookups to
     /// hit the pointer fast path.
     pub fn shared_key(&self, key: &str) -> Option<Rc<str>> {
-        self.position(key).map(|position| Rc::clone(&self.entries[position].0))
+        self.position(key)
+            .map(|position| Rc::clone(&self.entries[position].0))
     }
 
     /// Entry slot for `key`, for callers that read the same entry several times
@@ -186,7 +191,10 @@ mod tests {
         }
         map.insert("3".to_string(), 30);
         assert_eq!(map.get("3"), Some(&30));
-        assert_eq!(map.keys().map(|key| &**key).collect::<Vec<_>>()[..5], ["0", "1", "2", "3", "4"]);
+        assert_eq!(
+            map.keys().map(|key| &**key).collect::<Vec<_>>()[..5],
+            ["0", "1", "2", "3", "4"]
+        );
 
         assert_eq!(map.remove("4"), Some(4));
         assert_eq!(map.get("5"), Some(&5));

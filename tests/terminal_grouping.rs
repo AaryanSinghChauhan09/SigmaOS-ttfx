@@ -30,7 +30,11 @@ fn reference_grouping(
         CharacterGroup::ColumnLeftToRight | CharacterGroup::ColumnRightToLeft => {
             let mut groups = Vec::new();
             for key in 0..=terminal.canvas.right {
-                let group = all.iter().copied().filter(|id| coord(id).column == key).collect::<Vec<_>>();
+                let group = all
+                    .iter()
+                    .copied()
+                    .filter(|id| coord(id).column == key)
+                    .collect::<Vec<_>>();
                 if !group.is_empty() {
                     groups.push(group);
                 }
@@ -43,7 +47,11 @@ fn reference_grouping(
         CharacterGroup::RowBottomToTop | CharacterGroup::RowTopToBottom => {
             let mut groups = Vec::new();
             for key in 0..=terminal.canvas.top {
-                let group = all.iter().copied().filter(|id| coord(id).row == key).collect::<Vec<_>>();
+                let group = all
+                    .iter()
+                    .copied()
+                    .filter(|id| coord(id).row == key)
+                    .collect::<Vec<_>>();
                 if !group.is_empty() {
                     groups.push(group);
                 }
@@ -53,7 +61,8 @@ fn reference_grouping(
             }
             groups
         }
-        CharacterGroup::DiagonalBottomLeftToTopRight | CharacterGroup::DiagonalTopRightToBottomLeft => {
+        CharacterGroup::DiagonalBottomLeftToTopRight
+        | CharacterGroup::DiagonalTopRightToBottomLeft => {
             let mut groups = Vec::new();
             for key in 0..=(terminal.canvas.top + terminal.canvas.right) {
                 let group = all
@@ -73,10 +82,11 @@ fn reference_grouping(
             }
             groups
         }
-        CharacterGroup::DiagonalTopLeftToBottomRight | CharacterGroup::DiagonalBottomRightToTopLeft => {
+        CharacterGroup::DiagonalTopLeftToBottomRight
+        | CharacterGroup::DiagonalBottomRightToTopLeft => {
             let mut groups = Vec::new();
-            for key in
-                (terminal.canvas.left - terminal.canvas.top)..=(terminal.canvas.right - terminal.canvas.bottom)
+            for key in (terminal.canvas.left - terminal.canvas.top)
+                ..=(terminal.canvas.right - terminal.canvas.bottom)
             {
                 let group = all
                     .iter()
