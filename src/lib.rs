@@ -16,7 +16,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// ```
 ///
 /// Nothing ttfx says is worth dying over, so messages go out through these two
-/// and a failed write is dropped (basecamp/omarchy#6762).
+/// and a failed write is dropped.
 #[macro_export]
 macro_rules! outln {
     ($($arg:tt)*) => {{

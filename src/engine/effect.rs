@@ -84,7 +84,7 @@ pub fn run_effect(
 /// screensaver's window is killed at lock, an emulator exits, a reader closes
 /// the pipe. Every write after that fails, teardown included, and there is no
 /// cursor left to restore — so this ends the run instead of raising an error
-/// nobody can be told about (basecamp/omarchy#6762).
+/// nobody can be told about.
 ///
 /// EIO is the pty slave outliving its master; EPIPE only surfaces here when
 /// SIGPIPE was ignored by whoever started us, since we restore its default.
